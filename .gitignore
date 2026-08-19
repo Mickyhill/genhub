@@ -1,0 +1,7 @@
+venv/
+node_modules/
+genhub.db
+uploads/*
+!uploads/.gitkeep
+__pycache__/
+*.pyc
