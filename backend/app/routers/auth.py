@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.reg_number import parse_reg_number
-from app.models import Student, Admin, Faculty, Department, Level, Semester, RegNumberRange
+from app.models import Student, Admin, Faculty, Department, RegNumberRange
 from app.schemas.user import StudentRegister, StudentOut, AdminCreate, AdminOut, LoginRequest, Token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -42,22 +42,13 @@ def register_student(data: StudentRegister, db: Session = Depends(get_db)):
             "Contact your admin if you believe this is a mistake.",
         )
 
-    # Level and semester must actually belong to the resolved department.
-    level = db.query(Level).filter(Level.id == data.level_id, Level.department_id == department.id).first()
-    if not level:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Selected level does not belong to your department")
-
-    semester = db.query(Semester).filter(Semester.id == data.semester_id, Semester.level_id == level.id).first()
-    if not semester:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Selected semester does not belong to your level")
-
+    # Level and semester are NOT set here anymore — the student picks which
+    # level/semester to view freely from their dashboard after logging in.
     student = Student(
         reg_number=reg_number,
         full_name=data.full_name,
         hashed_password=hash_password(data.password),
         department_id=department.id,
-        level_id=level.id,
-        semester_id=semester.id,
     )
     db.add(student)
     db.commit()
@@ -88,13 +79,11 @@ def register_admin(data: AdminCreate, db: Session = Depends(get_db)):
 def login(data: LoginRequest, db: Session = Depends(get_db)):
     identifier = data.identifier.strip()
 
-    # Try student (by registration number) first.
     student = db.query(Student).filter(Student.reg_number == identifier.upper()).first()
     if student and verify_password(data.password, student.hashed_password):
         token = create_access_token({"sub": str(student.id), "role": "student"})
         return Token(access_token=token, role="student")
 
-    # Then try admin (by username).
     admin = db.query(Admin).filter(Admin.username == identifier).first()
     if admin and verify_password(data.password, admin.hashed_password):
         token = create_access_token({"sub": str(admin.id), "role": "admin"})
