@@ -4,36 +4,20 @@ import client from "../api/client";
 
 export default function Register() {
   const [regNumber, setRegNumber] = useState("");
-  const [resolved, setResolved] = useState(null); // { faculty_id, faculty_name, department_id, department_name }
+  const [resolved, setResolved] = useState(null); // { faculty_name, department_name }
   const [resolveError, setResolveError] = useState("");
   const [checking, setChecking] = useState(false);
-
-  const [levels, setLevels] = useState([]);
-  const [semesters, setSemesters] = useState([]);
-  const [levelId, setLevelId] = useState("");
-  const [semesterId, setSemesterId] = useState("");
 
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  // Reset everything downstream whenever the reg number text changes.
+  // Reset the "verified" state whenever the reg number text changes.
   useEffect(() => {
     setResolved(null);
     setResolveError("");
-    setLevels([]); setLevelId("");
-    setSemesters([]); setSemesterId("");
   }, [regNumber]);
-
-  useEffect(() => {
-    if (levelId) {
-      client.get(`/browse/semesters?level_id=${levelId}`).then((res) => setSemesters(res.data));
-    } else {
-      setSemesters([]);
-    }
-    setSemesterId("");
-  }, [levelId]);
 
   async function handleCheckRegNumber() {
     setChecking(true);
@@ -42,8 +26,6 @@ export default function Register() {
     try {
       const res = await client.get(`/browse/resolve-reg-number?reg_number=${encodeURIComponent(regNumber)}`);
       setResolved(res.data);
-      const levelsRes = await client.get(`/browse/levels?department_id=${res.data.department_id}`);
-      setLevels(levelsRes.data);
     } catch (err) {
       setResolveError(err.response?.data?.detail || "Could not verify this registration number");
     } finally {
@@ -59,8 +41,6 @@ export default function Register() {
         reg_number: regNumber,
         full_name: fullName,
         password,
-        level_id: Number(levelId),
-        semester_id: Number(semesterId),
       });
       navigate("/login");
     } catch (err) {
@@ -72,6 +52,10 @@ export default function Register() {
     <div className="container">
       <div className="card" style={{ marginTop: 40 }}>
         <h1>Create your GenHub account</h1>
+        <p style={{ fontSize: 13, color: "#666" }}>
+          Your level and semester aren't fixed at registration — once you're in,
+          you can freely browse any level/semester within your department.
+        </p>
         {error && <div className="error">{error}</div>}
 
         <label style={{ fontWeight: 600, fontSize: 14 }}>Registration Number</label>
@@ -102,17 +86,6 @@ export default function Register() {
           <form onSubmit={handleSubmit}>
             <input placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
             <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-
-            <select value={levelId} onChange={(e) => setLevelId(e.target.value)} required>
-              <option value="">Select Level</option>
-              {levels.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
-            </select>
-
-            <select value={semesterId} onChange={(e) => setSemesterId(e.target.value)} disabled={!levelId} required>
-              <option value="">Select Semester</option>
-              {semesters.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-
             <button type="submit">Register</button>
           </form>
         )}
