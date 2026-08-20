@@ -6,9 +6,9 @@ class StudentRegister(BaseModel):
     reg_number: str
     full_name: str
     password: str
-    level_id: int
-    semester_id: int
-    # department_id is intentionally NOT here — it's derived from reg_number.
+    # No level_id / semester_id here anymore — students browse freely
+    # within their department after logging in, instead of being locked
+    # to whichever semester they picked at registration time.
 
 
 class StudentOut(BaseModel):
@@ -17,8 +17,6 @@ class StudentOut(BaseModel):
     reg_number: str
     full_name: str
     department_id: Optional[int] = None
-    level_id: Optional[int] = None
-    semester_id: Optional[int] = None
 
 
 class AdminCreate(BaseModel):
