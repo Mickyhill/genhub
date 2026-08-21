@@ -1,13 +1,11 @@
-import os
-import uuid
-import shutil
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import get_current_admin
-from app.core.config import UPLOAD_DIR
-from app.models import Faculty, Department, Level, Semester, Course, TimetableEntry, Material, RegNumberRange
+from app.core.security import hash_password
+from app.models import Faculty, Department, Level, Semester, Course, TimetableEntry, Material, RegNumberRange, Student
 from app.schemas.academic import (
     FacultyCreate, FacultyOut,
     DepartmentCreate, DepartmentOut,
@@ -18,10 +16,9 @@ from app.schemas.academic import (
     MaterialOut,
     RegNumberRangeCreate, RegNumberRangeOut,
 )
+from app.schemas.user import StudentOut, PasswordResetRequest
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(get_current_admin)])
-
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 # ── Faculty ───────────────────────────────────────────────────────────
@@ -56,7 +53,6 @@ def delete_faculty(faculty_id: int, db: Session = Depends(get_db)):
     obj = db.query(Faculty).filter(Faculty.id == faculty_id).first()
     if not obj:
         raise HTTPException(404, "Faculty not found")
-    # Cascades: deletes departments/levels/semesters/courses/timetable/materials/reg-ranges below it too.
     db.delete(obj)
     db.commit()
     return {"deleted": True}
@@ -270,7 +266,7 @@ def delete_timetable_entry(entry_id: int, db: Session = Depends(get_db)):
     return {"deleted": True}
 
 
-# ── Materials (any file type) ────────────────────────────────────────
+# ── Materials (any file type — stored directly in the database) ──────
 @router.post("/materials", response_model=MaterialOut)
 def upload_material(
     course_id: int = Form(...),
@@ -282,22 +278,15 @@ def upload_material(
     if not course:
         raise HTTPException(404, "Course not found")
 
-    ext = os.path.splitext(file.filename)[1]
-    stored_name = f"{uuid.uuid4().hex}{ext}"
-    dest_path = os.path.join(UPLOAD_DIR, stored_name)
-
-    with open(dest_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    size_bytes = os.path.getsize(dest_path)
+    file_bytes = file.file.read()
 
     obj = Material(
         course_id=course_id,
         title=title,
         original_filename=file.filename,
-        stored_filename=stored_name,
         content_type=file.content_type,
-        file_size_bytes=size_bytes,
+        file_size_bytes=len(file_bytes),
+        file_data=file_bytes,
     )
     db.add(obj)
     db.commit()
@@ -315,18 +304,12 @@ def delete_material(material_id: int, db: Session = Depends(get_db)):
     obj = db.query(Material).filter(Material.id == material_id).first()
     if not obj:
         raise HTTPException(404, "Material not found")
-    file_path = os.path.join(UPLOAD_DIR, obj.stored_filename)
-    if os.path.exists(file_path):
-        os.remove(file_path)
     db.delete(obj)
     db.commit()
     return {"deleted": True}
 
 
 # ── Registration Number Ranges ───────────────────────────────────────
-# Controls which student numbers are allowed to register into a department,
-# e.g. start=1, end=90 for regular intake. Admins can add extra ranges
-# later (e.g. a "special addition" batch) without disturbing the first one.
 @router.get("/reg-ranges", response_model=list[RegNumberRangeOut])
 def list_reg_ranges(department_id: int, db: Session = Depends(get_db)):
     return db.query(RegNumberRange).filter(RegNumberRange.department_id == department_id).all()
@@ -358,3 +341,23 @@ def delete_reg_range(range_id: int, db: Session = Depends(get_db)):
     db.delete(obj)
     db.commit()
     return {"deleted": True}
+
+
+# ── Student lookup & password reset ──────────────────────────────────
+@router.get("/students/lookup", response_model=StudentOut)
+def lookup_student(reg_number: str, db: Session = Depends(get_db)):
+    """Find a student by registration number — used before resetting a password."""
+    student = db.query(Student).filter(Student.reg_number == reg_number.strip().upper()).first()
+    if not student:
+        raise HTTPException(404, "No student found with that registration number")
+    return student
+
+
+@router.post("/students/reset-password")
+def reset_student_password(data: PasswordResetRequest, db: Session = Depends(get_db)):
+    student = db.query(Student).filter(Student.reg_number == data.reg_number.strip().upper()).first()
+    if not student:
+        raise HTTPException(404, "No student found with that registration number")
+    student.hashed_password = hash_password(data.new_password)
+    db.commit()
+    return {"success": True}
