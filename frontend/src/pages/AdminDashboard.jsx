@@ -92,6 +92,10 @@ export default function AdminDashboard() {
   const [courses, setCourses] = useState([]);
   const [regRanges, setRegRanges] = useState([]);
 
+  const [resetRegNumber, setResetRegNumber] = useState("");
+  const [resetNewPassword, setResetNewPassword] = useState("");
+  const [resetFoundName, setResetFoundName] = useState("");
+
   const [facultyId, setFacultyId] = useState("");
   const [departmentId, setDepartmentId] = useState("");
   const [levelId, setLevelId] = useState("");
@@ -291,6 +295,28 @@ export default function AdminDashboard() {
     } catch (err) { flash(err.response?.data?.detail || "Failed", true); }
   }
 
+  // ── Password Reset ───────────────────────────────────────────────
+  async function handleLookupStudent() {
+    setResetFoundName("");
+    try {
+      const res = await client.get(`/admin/students/lookup?reg_number=${encodeURIComponent(resetRegNumber)}`);
+      setResetFoundName(res.data.full_name);
+    } catch (err) {
+      flash(err.response?.data?.detail || "Student not found", true);
+    }
+  }
+  async function handleResetPassword(e) {
+    e.preventDefault();
+    try {
+      await client.post("/admin/students/reset-password", {
+        reg_number: resetRegNumber,
+        new_password: resetNewPassword,
+      });
+      setResetNewPassword("");
+      flash("Password reset — tell the student their new password");
+    } catch (err) { flash(err.response?.data?.detail || "Failed", true); }
+  }
+
   // ── Registration Number Ranges ───────────────────────────────────
   async function handleCreateRange(e) {
     e.preventDefault();
@@ -374,6 +400,26 @@ export default function AdminDashboard() {
       <div className="container">
         {message && <div className="card" style={{ background: "#dcfce7" }}>{message}</div>}
         {error && <div className="card error">{error}</div>}
+
+        <div className="card">
+          <h3>Student Password Reset</h3>
+          <p style={{ fontSize: 13, color: "#666" }}>
+            Look up a student by registration number, then set a new password for them directly.
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input placeholder="Registration number e.g. 24/SCIT/SEN/045" value={resetRegNumber} onChange={(e) => setResetRegNumber(e.target.value)} />
+            <button style={{ width: "auto" }} onClick={handleLookupStudent} disabled={!resetRegNumber}>Look up</button>
+          </div>
+          {resetFoundName && (
+            <>
+              <div className="card" style={{ background: "#eef2ff" }}>Found: <strong>{resetFoundName}</strong></div>
+              <form onSubmit={handleResetPassword}>
+                <input type="password" placeholder="New password" value={resetNewPassword} onChange={(e) => setResetNewPassword(e.target.value)} required />
+                <button type="submit">Set New Password</button>
+              </form>
+            </>
+          )}
+        </div>
 
         <div className="card">
           <h3>1. Faculty / School</h3>
