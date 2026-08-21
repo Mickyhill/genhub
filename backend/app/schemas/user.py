@@ -6,9 +6,6 @@ class StudentRegister(BaseModel):
     reg_number: str
     full_name: str
     password: str
-    # No level_id / semester_id here anymore — students browse freely
-    # within their department after logging in, instead of being locked
-    # to whichever semester they picked at registration time.
 
 
 class StudentOut(BaseModel):
@@ -41,3 +38,8 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
     role: str
+
+
+class PasswordResetRequest(BaseModel):
+    reg_number: str
+    new_password: str
