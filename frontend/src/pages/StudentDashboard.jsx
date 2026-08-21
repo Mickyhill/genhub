@@ -43,6 +43,17 @@ export default function StudentDashboard() {
     navigate("/login");
   }
 
+  async function handleDownloadCalendar() {
+    const res = await client.get(`/student/timetable.ics?semester_id=${semesterId}`, { responseType: "blob" });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "timetable.ics");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+
   const sortedTimetable = [...timetable].sort(
     (a, b) => DAYS.indexOf(a.day_of_week) - DAYS.indexOf(b.day_of_week) || a.start_time.localeCompare(b.start_time)
   );
@@ -97,6 +108,15 @@ export default function StudentDashboard() {
                   <span>{t.venue || "—"}</span>
                 </div>
               ))}
+              {sortedTimetable.length > 0 && (
+                <button style={{ width: "auto", marginTop: 12 }} onClick={handleDownloadCalendar}>
+                  📅 Add to my phone's calendar
+                </button>
+              )}
+              <p style={{ fontSize: 13, color: "#666", marginTop: 8 }}>
+                Downloads a file you import once into Google/Apple Calendar — your
+                phone's own alarms then remind you before each lecture.
+              </p>
             </div>
           </>
         )}
