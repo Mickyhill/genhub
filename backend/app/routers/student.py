@@ -1,20 +1,27 @@
-import os
+from datetime import date, timedelta
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import get_current_student
-from app.core.config import UPLOAD_DIR
 from app.models import Student, Level, Semester, Course, TimetableEntry, Material
 from app.schemas.academic import CourseOut, TimetableEntryOut, MaterialOut, LevelOut, SemesterOut
 from app.schemas.user import StudentOut
 
 router = APIRouter(prefix="/student", tags=["student"], dependencies=[Depends(get_current_student)])
 
+_WEEKDAY_INDEX = {
+    "MONDAY": 0, "TUESDAY": 1, "WEDNESDAY": 2, "THURSDAY": 3,
+    "FRIDAY": 4, "SATURDAY": 5, "SUNDAY": 6,
+}
+_ICS_BYDAY = {
+    "MONDAY": "MO", "TUESDAY": "TU", "WEDNESDAY": "WE", "THURSDAY": "TH",
+    "FRIDAY": "FR", "SATURDAY": "SA", "SUNDAY": "SU",
+}
+
 
 def _get_semester_in_department(db: Session, semester_id: int, department_id: int) -> Semester:
-    """Fetch a semester only if it belongs (via its level) to the given department."""
     semester = (
         db.query(Semester)
         .join(Level, Semester.level_id == Level.id)
@@ -26,6 +33,14 @@ def _get_semester_in_department(db: Session, semester_id: int, department_id: in
     return semester
 
 
+def _next_occurrence(day_name: str) -> date:
+    """Returns the next date (today or later) that falls on the given weekday."""
+    target = _WEEKDAY_INDEX.get(day_name.upper(), 0)
+    today = date.today()
+    days_ahead = (target - today.weekday()) % 7
+    return today + timedelta(days=days_ahead)
+
+
 @router.get("/me", response_model=StudentOut)
 def get_my_profile(student: Student = Depends(get_current_student)):
     return student
@@ -35,7 +50,6 @@ def get_my_profile(student: Student = Depends(get_current_student)):
 def get_my_levels(
     student: Student = Depends(get_current_student), db: Session = Depends(get_db)
 ):
-    """All levels within the student's own department — they can browse any of these freely."""
     if not student.department_id:
         raise HTTPException(400, "Your account is not linked to a department")
     return db.query(Level).filter(Level.department_id == student.department_id).all()
@@ -80,6 +94,53 @@ def get_timetable_for_semester(
     ]
 
 
+@router.get("/timetable.ics")
+def download_timetable_ics(
+    semester_id: int,
+    student: Student = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
+    """
+    Generates a calendar file the student imports ONCE into Google/Apple
+    Calendar. Their phone's own calendar app then handles reminders and
+    alarms natively — more reliable than a custom notification system.
+    """
+    semester = _get_semester_in_department(db, semester_id, student.department_id)
+    entries = db.query(TimetableEntry).filter(TimetableEntry.semester_id == semester.id).all()
+
+    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//GenHub//Timetable//EN"]
+    for e in entries:
+        start_date = _next_occurrence(e.day_of_week)
+        dtstart = f"{start_date.strftime('%Y%m%d')}T{e.start_time.strftime('%H%M%S')}"
+        dtend = f"{start_date.strftime('%Y%m%d')}T{e.end_time.strftime('%H%M%S')}"
+        byday = _ICS_BYDAY.get(e.day_of_week.upper(), "MO")
+        summary = f"{e.course.code} Lecture"
+        location = e.venue or ""
+        lines += [
+            "BEGIN:VEVENT",
+            f"UID:genhub-{e.id}@genhub",
+            f"DTSTART:{dtstart}",
+            f"DTEND:{dtend}",
+            f"RRULE:FREQ=WEEKLY;BYDAY={byday}",
+            f"SUMMARY:{summary}",
+            f"LOCATION:{location}",
+            "BEGIN:VALARM",
+            "TRIGGER:-PT15M",
+            "ACTION:DISPLAY",
+            "DESCRIPTION:Reminder",
+            "END:VALARM",
+            "END:VEVENT",
+        ]
+    lines.append("END:VCALENDAR")
+    ics_content = "\r\n".join(lines)
+
+    return Response(
+        content=ics_content,
+        media_type="text/calendar",
+        headers={"Content-Disposition": "attachment; filename=timetable.ics"},
+    )
+
+
 @router.get("/courses/{course_id}/materials", response_model=list[MaterialOut])
 def get_course_materials(
     course_id: int,
@@ -89,7 +150,6 @@ def get_course_materials(
     course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         raise HTTPException(404, "Course not found")
-    # Confirm this course's semester's level belongs to the student's own department.
     _get_semester_in_department(db, course.semester_id, student.department_id)
     return db.query(Material).filter(Material.course_id == course_id).all()
 
@@ -105,8 +165,8 @@ def download_material(
         raise HTTPException(404, "Material not found")
     _get_semester_in_department(db, material.course.semester_id, student.department_id)
 
-    file_path = os.path.join(UPLOAD_DIR, material.stored_filename)
-    if not os.path.exists(file_path):
-        raise HTTPException(404, "File missing on server")
-
-    return FileResponse(file_path, filename=material.original_filename, media_type=material.content_type)
+    return Response(
+        content=material.file_data,
+        media_type=material.content_type or "application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{material.original_filename}"'},
+    )
