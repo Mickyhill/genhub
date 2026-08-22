@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import get_current_student
-from app.models import Student, Level, Semester, Course, TimetableEntry, Material
-from app.schemas.academic import CourseOut, TimetableEntryOut, MaterialOut, LevelOut, SemesterOut
+from app.models import Student, Level, Semester, Course, TimetableEntry, Material, Result
+from app.schemas.academic import CourseOut, TimetableEntryOut, MaterialOut, LevelOut, SemesterOut, ResultOut
 from app.schemas.user import StudentOut
 
 router = APIRouter(prefix="/student", tags=["student"], dependencies=[Depends(get_current_student)])
@@ -139,6 +139,36 @@ def download_timetable_ics(
         media_type="text/calendar",
         headers={"Content-Disposition": "attachment; filename=timetable.ics"},
     )
+
+
+@router.get("/results", response_model=list[ResultOut])
+def get_my_results(
+    semester_id: int,
+    student: Student = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
+    semester = _get_semester_in_department(db, semester_id, student.department_id)
+    course_ids = [c.id for c in db.query(Course).filter(Course.semester_id == semester.id).all()]
+    rows = db.query(Result).filter(Result.student_id == student.id, Result.course_id.in_(course_ids)).all()
+
+    def grade(total):
+        if total >= 70: return "A"
+        if total >= 60: return "B"
+        if total >= 50: return "C"
+        if total >= 45: return "D"
+        return "F"
+
+    out = []
+    for r in rows:
+        ca = r.ca_score or 0
+        exam = r.exam_score or 0
+        total = ca + exam
+        out.append(ResultOut(
+            id=r.id, student_id=r.student_id, student_reg_number=student.reg_number, student_name=student.full_name,
+            course_id=r.course_id, course_code=r.course.code, ca_score=r.ca_score, exam_score=r.exam_score,
+            total=total, grade=grade(total),
+        ))
+    return out
 
 
 @router.get("/courses/{course_id}/materials", response_model=list[MaterialOut])
