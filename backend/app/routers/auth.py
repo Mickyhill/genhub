@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.reg_number import parse_reg_number
-from app.models import Student, Admin, Faculty, Department, RegNumberRange
+from app.models import Student, Admin, Lecturer, Faculty, Department, RegNumberRange
 from app.schemas.user import StudentRegister, StudentOut, AdminCreate, AdminOut, LoginRequest, Token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -88,5 +88,10 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     if admin and verify_password(data.password, admin.hashed_password):
         token = create_access_token({"sub": str(admin.id), "role": "admin"})
         return Token(access_token=token, role="admin")
+
+    lecturer = db.query(Lecturer).filter(Lecturer.username == identifier).first()
+    if lecturer and verify_password(data.password, lecturer.hashed_password):
+        token = create_access_token({"sub": str(lecturer.id), "role": "lecturer"})
+        return Token(access_token=token, role="lecturer")
 
     raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid registration number/username or password")
