@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.database import Base, engine
-from app.routers import auth, admin, public, student
+from app.routers import auth, admin, public, student, lecturer
 
 # Creates tables if they don't exist. Fine for local dev; for real
 # production changes later, switch to Alembic migrations.
@@ -22,6 +22,7 @@ app.include_router(auth.router)
 app.include_router(public.router)
 app.include_router(admin.router)
 app.include_router(student.router)
+app.include_router(lecturer.router)
 
 
 @app.get("/")
