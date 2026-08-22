@@ -128,3 +128,48 @@ class ResolvedRegNumber(BaseModel):
     faculty_name: str
     department_id: int
     department_name: str
+
+
+# ── Lecturer-Course assignment ───────────────────────────────────────
+class CourseAssignment(BaseModel):
+    course_id: int
+
+
+class AssignedCourseOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int  # LecturerCourse row id
+    course_id: int
+    course_code: str
+    course_title: str
+
+
+# ── Results ───────────────────────────────────────────────────────────
+class ResultCreate(BaseModel):
+    student_id: int
+    course_id: int
+    ca_score: Optional[float] = None
+    exam_score: Optional[float] = None
+
+
+class ResultOut(BaseModel):
+    id: int
+    student_id: int
+    student_reg_number: str
+    student_name: str
+    course_id: int
+    course_code: str
+    ca_score: Optional[float] = None
+    exam_score: Optional[float] = None
+    total: float
+    grade: str
+
+
+# ── Admin analytics ───────────────────────────────────────────────────
+class AnalyticsOverview(BaseModel):
+    total_students: int
+    total_faculties: int
+    total_departments: int
+    total_courses: int
+    total_materials: int
+    total_lecturers: int
+    departments_missing_reg_ranges: list[str]
