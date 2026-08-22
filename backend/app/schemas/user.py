@@ -29,8 +29,21 @@ class AdminOut(BaseModel):
     full_name: str
 
 
+class LecturerCreate(BaseModel):
+    username: str
+    full_name: str
+    password: str
+
+
+class LecturerOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    username: str
+    full_name: str
+
+
 class LoginRequest(BaseModel):
-    identifier: str  # registration number for students, username for admins
+    identifier: str  # reg number for students, username for admins/lecturers
     password: str
 
 
