@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import decode_access_token
-from app.models import Student, Admin
+from app.models import Student, Admin, Lecturer
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -36,3 +36,14 @@ def get_current_admin(
     if not admin:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Admin not found")
     return admin
+
+
+def get_current_lecturer(
+    payload: dict = Depends(get_current_payload), db: Session = Depends(get_db)
+) -> Lecturer:
+    if payload.get("role") != "lecturer":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Lecturer access required")
+    lecturer = db.query(Lecturer).filter(Lecturer.id == payload.get("sub")).first()
+    if not lecturer:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Lecturer not found")
+    return lecturer
