@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import get_current_admin
 from app.core.security import hash_password
-from app.models import Faculty, Department, Level, Semester, Course, TimetableEntry, Material, RegNumberRange, Student
+from app.models import Faculty, Department, Level, Semester, Course, TimetableEntry, Material, RegNumberRange, Student, Lecturer, LecturerCourse, Result
 from app.schemas.academic import (
     FacultyCreate, FacultyOut,
     DepartmentCreate, DepartmentOut,
@@ -15,8 +15,11 @@ from app.schemas.academic import (
     TimetableEntryCreate, TimetableEntryOut,
     MaterialOut,
     RegNumberRangeCreate, RegNumberRangeOut,
+    CourseAssignment, AssignedCourseOut,
+    ResultCreate, ResultOut,
+    AnalyticsOverview,
 )
-from app.schemas.user import StudentOut, PasswordResetRequest
+from app.schemas.user import StudentOut, PasswordResetRequest, LecturerCreate, LecturerOut
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(get_current_admin)])
 
@@ -361,3 +364,135 @@ def reset_student_password(data: PasswordResetRequest, db: Session = Depends(get
     student.hashed_password = hash_password(data.new_password)
     db.commit()
     return {"success": True}
+
+
+# ── Lecturer management ───────────────────────────────────────────────
+@router.post("/lecturers", response_model=LecturerOut)
+def create_lecturer(data: LecturerCreate, db: Session = Depends(get_db)):
+    if db.query(Lecturer).filter(Lecturer.username == data.username).first():
+        raise HTTPException(400, "Username already taken")
+    lecturer = Lecturer(
+        username=data.username,
+        full_name=data.full_name,
+        hashed_password=hash_password(data.password),
+    )
+    db.add(lecturer)
+    db.commit()
+    db.refresh(lecturer)
+    return lecturer
+
+
+@router.get("/lecturers", response_model=list[LecturerOut])
+def list_lecturers(db: Session = Depends(get_db)):
+    return db.query(Lecturer).all()
+
+
+@router.delete("/lecturers/{lecturer_id}")
+def delete_lecturer(lecturer_id: int, db: Session = Depends(get_db)):
+    lecturer = db.query(Lecturer).filter(Lecturer.id == lecturer_id).first()
+    if not lecturer:
+        raise HTTPException(404, "Lecturer not found")
+    db.delete(lecturer)
+    db.commit()
+    return {"deleted": True}
+
+
+@router.get("/lecturers/{lecturer_id}/courses", response_model=list[AssignedCourseOut])
+def list_lecturer_courses(lecturer_id: int, db: Session = Depends(get_db)):
+    rows = db.query(LecturerCourse).filter(LecturerCourse.lecturer_id == lecturer_id).all()
+    return [
+        AssignedCourseOut(id=r.id, course_id=r.course.id, course_code=r.course.code, course_title=r.course.title)
+        for r in rows
+    ]
+
+
+@router.post("/lecturers/{lecturer_id}/courses", response_model=AssignedCourseOut)
+def assign_course_to_lecturer(lecturer_id: int, data: CourseAssignment, db: Session = Depends(get_db)):
+    lecturer = db.query(Lecturer).filter(Lecturer.id == lecturer_id).first()
+    if not lecturer:
+        raise HTTPException(404, "Lecturer not found")
+    course = db.query(Course).filter(Course.id == data.course_id).first()
+    if not course:
+        raise HTTPException(404, "Course not found")
+    if db.query(LecturerCourse).filter(LecturerCourse.lecturer_id == lecturer_id, LecturerCourse.course_id == data.course_id).first():
+        raise HTTPException(400, "Already assigned")
+    row = LecturerCourse(lecturer_id=lecturer_id, course_id=data.course_id)
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return AssignedCourseOut(id=row.id, course_id=course.id, course_code=course.code, course_title=course.title)
+
+
+@router.delete("/lecturers/{lecturer_id}/courses/{assignment_id}")
+def unassign_course_from_lecturer(lecturer_id: int, assignment_id: int, db: Session = Depends(get_db)):
+    row = db.query(LecturerCourse).filter(LecturerCourse.id == assignment_id, LecturerCourse.lecturer_id == lecturer_id).first()
+    if not row:
+        raise HTTPException(404, "Assignment not found")
+    db.delete(row)
+    db.commit()
+    return {"deleted": True}
+
+
+# ── Results (admin can manage results for ANY course) ────────────────
+def _compute_grade(total: float) -> str:
+    if total >= 70: return "A"
+    if total >= 60: return "B"
+    if total >= 50: return "C"
+    if total >= 45: return "D"
+    return "F"
+
+
+def _result_to_out(r: Result) -> ResultOut:
+    ca = r.ca_score or 0
+    exam = r.exam_score or 0
+    total = ca + exam
+    return ResultOut(
+        id=r.id, student_id=r.student_id, student_reg_number=r.student.reg_number, student_name=r.student.full_name,
+        course_id=r.course_id, course_code=r.course.code, ca_score=r.ca_score, exam_score=r.exam_score,
+        total=total, grade=_compute_grade(total),
+    )
+
+
+@router.get("/results", response_model=list[ResultOut])
+def list_results_for_course(course_id: int, db: Session = Depends(get_db)):
+    rows = db.query(Result).filter(Result.course_id == course_id).all()
+    return [_result_to_out(r) for r in rows]
+
+
+@router.post("/results", response_model=ResultOut)
+def upsert_result(data: ResultCreate, db: Session = Depends(get_db)):
+    if not db.query(Student).filter(Student.id == data.student_id).first():
+        raise HTTPException(404, "Student not found")
+    if not db.query(Course).filter(Course.id == data.course_id).first():
+        raise HTTPException(404, "Course not found")
+    row = db.query(Result).filter(Result.student_id == data.student_id, Result.course_id == data.course_id).first()
+    if row:
+        row.ca_score = data.ca_score
+        row.exam_score = data.exam_score
+    else:
+        row = Result(student_id=data.student_id, course_id=data.course_id, ca_score=data.ca_score, exam_score=data.exam_score)
+        db.add(row)
+    db.commit()
+    db.refresh(row)
+    return _result_to_out(row)
+
+
+# ── Analytics ─────────────────────────────────────────────────────────
+@router.get("/analytics/overview", response_model=AnalyticsOverview)
+def analytics_overview(db: Session = Depends(get_db)):
+    departments = db.query(Department).all()
+    missing = []
+    for d in departments:
+        has_range = db.query(RegNumberRange).filter(RegNumberRange.department_id == d.id).first()
+        if not has_range:
+            missing.append(f"{d.name} ({d.code})")
+
+    return AnalyticsOverview(
+        total_students=db.query(Student).count(),
+        total_faculties=db.query(Faculty).count(),
+        total_departments=db.query(Department).count(),
+        total_courses=db.query(Course).count(),
+        total_materials=db.query(Material).count(),
+        total_lecturers=db.query(Lecturer).count(),
+        departments_missing_reg_ranges=missing,
+    )
