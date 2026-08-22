@@ -15,7 +15,9 @@ export default function Login() {
       const res = await client.post("/auth/login", { identifier, password });
       const { access_token, role } = res.data;
       saveSession(access_token, role);
-      navigate(role === "admin" ? "/admin" : "/student");
+      if (role === "admin") navigate("/admin");
+      else if (role === "lecturer") navigate("/lecturer");
+      else navigate("/student");
     } catch (err) {
       setError(err.response?.data?.detail || "Login failed");
     }
