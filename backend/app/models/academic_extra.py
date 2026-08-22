@@ -1,85 +1,55 @@
 """
-Academic hierarchy models.
+Stage 2 (Timetable), Stage 3 (Materials), and Registration Number Ranges.
 
-Since scope is a SINGLE university, we skip a `universities` table and
-start at Faculty. Faculty and Department each carry a short `code` (e.g.
-"SCIT", "SEN") used to build and validate student registration numbers
-(format: YY/FACULTYCODE/DEPTCODE/NUMBER).
-
-Hierarchy:
-    Faculty -> Department -> Level -> Semester -> Course
+Materials store their file content directly in the database (LargeBinary)
+rather than on local disk. This is deliberate: Render's free tier does not
+guarantee local files survive every deploy, but the database does. Trade-
+off: not ideal for huge files (large lecture videos), fine for typical
+PDFs/slides/docs.
 """
-from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, ForeignKey, Time, LargeBinary
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 
-class Faculty(Base):
-    __tablename__ = "faculties"
+class TimetableEntry(Base):
+    __tablename__ = "timetable_entries"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False, unique=True)
-    code = Column(String, nullable=False, unique=True)
-
-    departments = relationship("Department", back_populates="faculty", cascade="all, delete-orphan")
-
-
-class Department(Base):
-    __tablename__ = "departments"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    code = Column(String, nullable=False)
-    faculty_id = Column(Integer, ForeignKey("faculties.id"), nullable=False)
-
-    faculty = relationship("Faculty", back_populates="departments")
-    levels = relationship("Level", back_populates="department", cascade="all, delete-orphan")
-    students = relationship("Student", back_populates="department")
-    reg_ranges = relationship("RegNumberRange", back_populates="department", cascade="all, delete-orphan")
-
-    __table_args__ = (
-        UniqueConstraint("name", "faculty_id", name="uq_department_name_per_faculty"),
-        UniqueConstraint("code", "faculty_id", name="uq_department_code_per_faculty"),
-    )
-
-
-class Level(Base):
-    __tablename__ = "levels"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    department_id = Column(Integer, ForeignKey("departments.id"), nullable=False)
-
-    department = relationship("Department", back_populates="levels")
-    semesters = relationship("Semester", back_populates="level", cascade="all, delete-orphan")
-
-    __table_args__ = (UniqueConstraint("name", "department_id", name="uq_level_per_department"),)
-
-
-class Semester(Base):
-    __tablename__ = "semesters"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    level_id = Column(Integer, ForeignKey("levels.id"), nullable=False)
-
-    level = relationship("Level", back_populates="semesters")
-    courses = relationship("Course", back_populates="semester", cascade="all, delete-orphan")
-    timetable_entries = relationship("TimetableEntry", back_populates="semester", cascade="all, delete-orphan")
-
-    __table_args__ = (UniqueConstraint("name", "level_id", name="uq_semester_per_level"),)
-
-
-class Course(Base):
-    __tablename__ = "courses"
-
-    id = Column(Integer, primary_key=True, index=True)
-    code = Column(String, nullable=False)
-    title = Column(String, nullable=False)
+    course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
     semester_id = Column(Integer, ForeignKey("semesters.id"), nullable=False)
 
-    semester = relationship("Semester", back_populates="courses")
-    materials = relationship("Material", back_populates="course", cascade="all, delete-orphan")
-    timetable_entries = relationship("TimetableEntry", back_populates="course", cascade="all, delete-orphan")
+    day_of_week = Column(String, nullable=False)  # "Monday" .. "Sunday"
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
+    venue = Column(String, nullable=True)
 
-    __table_args__ = (UniqueConstraint("code", "semester_id", name="uq_course_code_per_semester"),)
+    course = relationship("Course", back_populates="timetable_entries")
+    semester = relationship("Semester", back_populates="timetable_entries")
+
+
+class Material(Base):
+    __tablename__ = "materials"
+
+    id = Column(Integer, primary_key=True, index=True)
+    course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
+
+    title = Column(String, nullable=False)
+    original_filename = Column(String, nullable=False)
+    content_type = Column(String, nullable=True)
+    file_size_bytes = Column(Integer, nullable=True)
+    file_data = Column(LargeBinary, nullable=False)  # the actual file content, stored in Postgres
+
+    course = relationship("Course", back_populates="materials")
+
+
+class RegNumberRange(Base):
+    __tablename__ = "reg_number_ranges"
+
+    id = Column(Integer, primary_key=True, index=True)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=False)
+    start_number = Column(Integer, nullable=False)
+    end_number = Column(Integer, nullable=False)
+    label = Column(String, nullable=True)
+
+    department = relationship("Department", back_populates="reg_ranges")
