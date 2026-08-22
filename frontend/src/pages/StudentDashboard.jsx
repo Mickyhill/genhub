@@ -12,6 +12,7 @@ export default function StudentDashboard() {
   const [semesterId, setSemesterId] = useState("");
   const [courses, setCourses] = useState([]);
   const [timetable, setTimetable] = useState([]);
+  const [results, setResults] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -32,9 +33,11 @@ export default function StudentDashboard() {
   useEffect(() => {
     setCourses([]);
     setTimetable([]);
+    setResults([]);
     if (semesterId) {
       client.get(`/student/courses?semester_id=${semesterId}`).then((res) => setCourses(res.data));
       client.get(`/student/timetable?semester_id=${semesterId}`).then((res) => setTimetable(res.data));
+      client.get(`/student/results?semester_id=${semesterId}`).then((res) => setResults(res.data));
     }
   }, [semesterId]);
 
@@ -117,6 +120,18 @@ export default function StudentDashboard() {
                 Downloads a file you import once into Google/Apple Calendar — your
                 phone's own alarms then remind you before each lecture.
               </p>
+            </div>
+
+            <div className="card">
+              <h3>Results</h3>
+              {results.length === 0 && <p>No results published yet for this semester.</p>}
+              {results.map((r) => (
+                <div key={r.id} className="tt-row">
+                  <span>{r.course_code}</span>
+                  <span>CA: {r.ca_score ?? "—"} / Exam: {r.exam_score ?? "—"}</span>
+                  <span><strong>{r.total} ({r.grade})</strong></span>
+                </div>
+              ))}
             </div>
           </>
         )}
