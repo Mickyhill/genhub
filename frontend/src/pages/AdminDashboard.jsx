@@ -128,6 +128,18 @@ export default function AdminDashboard() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  // Analytics
+  const [analytics, setAnalytics] = useState(null);
+
+  // Lecturer management
+  const [lecturers, setLecturers] = useState([]);
+  const [newLecturerUsername, setNewLecturerUsername] = useState("");
+  const [newLecturerName, setNewLecturerName] = useState("");
+  const [newLecturerPassword, setNewLecturerPassword] = useState("");
+  const [selectedLecturerId, setSelectedLecturerId] = useState("");
+  const [lecturerAssignedCourses, setLecturerAssignedCourses] = useState([]);
+  const [courseToAssign, setCourseToAssign] = useState("");
+
   function flash(msg, isError = false) {
     if (isError) setError(msg); else setMessage(msg);
     setTimeout(() => { setMessage(""); setError(""); }, 3000);
@@ -137,6 +149,54 @@ export default function AdminDashboard() {
     client.get("/browse/faculties").then((res) => setFaculties(res.data));
   }
   useEffect(loadFaculties, []);
+
+  useEffect(() => {
+    client.get("/admin/analytics/overview").then((res) => setAnalytics(res.data));
+    client.get("/admin/lecturers").then((res) => setLecturers(res.data));
+  }, []);
+
+  function loadLecturerCourses(lecturerId) {
+    if (lecturerId) client.get(`/admin/lecturers/${lecturerId}/courses`).then((res) => setLecturerAssignedCourses(res.data));
+    else setLecturerAssignedCourses([]);
+  }
+  useEffect(() => { loadLecturerCourses(selectedLecturerId); }, [selectedLecturerId]);
+
+  async function handleCreateLecturer(e) {
+    e.preventDefault();
+    try {
+      await client.post("/admin/lecturers", {
+        username: newLecturerUsername, full_name: newLecturerName, password: newLecturerPassword,
+      });
+      setNewLecturerUsername(""); setNewLecturerName(""); setNewLecturerPassword("");
+      client.get("/admin/lecturers").then((res) => setLecturers(res.data));
+      flash("Lecturer account created");
+    } catch (err) { flash(err.response?.data?.detail || "Failed", true); }
+  }
+  async function handleDeleteLecturer(id) {
+    if (!window.confirm("Remove this lecturer account?")) return;
+    try {
+      await client.delete(`/admin/lecturers/${id}`);
+      if (String(id) === String(selectedLecturerId)) setSelectedLecturerId("");
+      client.get("/admin/lecturers").then((res) => setLecturers(res.data));
+      flash("Lecturer removed");
+    } catch (err) { flash(err.response?.data?.detail || "Failed", true); }
+  }
+  async function handleAssignCourse(e) {
+    e.preventDefault();
+    try {
+      await client.post(`/admin/lecturers/${selectedLecturerId}/courses`, { course_id: Number(courseToAssign) });
+      setCourseToAssign("");
+      loadLecturerCourses(selectedLecturerId);
+      flash("Course assigned");
+    } catch (err) { flash(err.response?.data?.detail || "Failed", true); }
+  }
+  async function handleUnassignCourse(assignmentId) {
+    try {
+      await client.delete(`/admin/lecturers/${selectedLecturerId}/courses/${assignmentId}`);
+      loadLecturerCourses(selectedLecturerId);
+      flash("Unassigned");
+    } catch (err) { flash(err.response?.data?.detail || "Failed", true); }
+  }
 
   function loadDepartments(fId) {
     if (fId) client.get(`/browse/departments?faculty_id=${fId}`).then((res) => setDepartments(res.data));
@@ -400,6 +460,72 @@ export default function AdminDashboard() {
       <div className="container">
         {message && <div className="card" style={{ background: "#dcfce7" }}>{message}</div>}
         {error && <div className="card error">{error}</div>}
+
+        {analytics && (
+          <div className="card">
+            <h3>Overview</h3>
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+              <span>👨‍🎓 {analytics.total_students} students</span>
+              <span>🏫 {analytics.total_faculties} faculties</span>
+              <span>🏛 {analytics.total_departments} departments</span>
+              <span>📚 {analytics.total_courses} courses</span>
+              <span>📄 {analytics.total_materials} materials</span>
+              <span>👩‍🏫 {analytics.total_lecturers} lecturers</span>
+            </div>
+            {analytics.departments_missing_reg_ranges.length > 0 && (
+              <div className="card error" style={{ marginTop: 12 }}>
+                ⚠️ These departments have no registration range set — students can't register into them yet:{" "}
+                {analytics.departments_missing_reg_ranges.join(", ")}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="card">
+          <h3>Lecturers</h3>
+          <form onSubmit={handleCreateLecturer}>
+            <input placeholder="Username" value={newLecturerUsername} onChange={(e) => setNewLecturerUsername(e.target.value)} required />
+            <input placeholder="Full name" value={newLecturerName} onChange={(e) => setNewLecturerName(e.target.value)} required />
+            <input type="password" placeholder="Password" value={newLecturerPassword} onChange={(e) => setNewLecturerPassword(e.target.value)} required />
+            <button type="submit">Create Lecturer Account</button>
+          </form>
+          {lecturers.map((l) => (
+            <div key={l.id} className="material-row">
+              <span
+                onClick={() => setSelectedLecturerId(String(l.id))}
+                style={{ cursor: "pointer", fontWeight: String(l.id) === String(selectedLecturerId) ? 700 : 400 }}
+              >
+                {String(l.id) === String(selectedLecturerId) ? "▶ " : ""}{l.full_name} ({l.username})
+              </span>
+              <button className="danger" style={{ width: "auto" }} onClick={() => handleDeleteLecturer(l.id)}>Remove</button>
+            </div>
+          ))}
+          {lecturers.length === 0 && <p>No lecturers yet — create one above.</p>}
+
+          {selectedLecturerId && (
+            <div className="card" style={{ background: "#f9fafb" }}>
+              <h4>Assign courses</h4>
+              <p style={{ fontSize: 13, color: "#666" }}>
+                Only courses from the currently drilled-down semester below are shown here — navigate to the
+                right Faculty → Department → Level → Semester first if the course you want isn't listed.
+              </p>
+              <form onSubmit={handleAssignCourse}>
+                <select value={courseToAssign} onChange={(e) => setCourseToAssign(e.target.value)} required>
+                  <option value="">Select course</option>
+                  {courses.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
+                </select>
+                <button type="submit">Assign</button>
+              </form>
+              {lecturerAssignedCourses.map((a) => (
+                <div key={a.id} className="material-row">
+                  <span>{a.course_code} — {a.course_title}</span>
+                  <button className="danger" style={{ width: "auto" }} onClick={() => handleUnassignCourse(a.id)}>Unassign</button>
+                </div>
+              ))}
+              {lecturerAssignedCourses.length === 0 && <p>No courses assigned yet.</p>}
+            </div>
+          )}
+        </div>
 
         <div className="card">
           <h3>Student Password Reset</h3>
