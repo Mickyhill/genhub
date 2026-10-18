@@ -1,12 +1,14 @@
 from datetime import date, timedelta
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import get_current_student
-from app.models import Student, Level, Semester, Course, TimetableEntry, Material, Result
+from app.models import Student, Level, Semester, Course, TimetableEntry, Material, Result, Announcement, ForumPost
 from app.schemas.academic import CourseOut, TimetableEntryOut, MaterialOut, LevelOut, SemesterOut, ResultOut
+from app.schemas.search import SearchOut, SearchCourse, SearchMaterial, SearchPost, SearchNotice
 from app.schemas.user import StudentOut
 
 router = APIRouter(prefix="/student", tags=["student"], dependencies=[Depends(get_current_student)])
@@ -39,6 +41,64 @@ def _next_occurrence(day_name: str) -> date:
     today = date.today()
     days_ahead = (target - today.weekday()) % 7
     return today + timedelta(days=days_ahead)
+
+
+def _like(q: str) -> str:
+    """Escape % and _ so a student's search text is matched as plain text."""
+    return "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+
+
+@router.get("/search", response_model=SearchOut)
+def search_everything(
+    q: str = Query("", max_length=60),
+    student: Student = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
+    """One box: courses and materials of the student's own department, forum posts, and notices they may see."""
+    q = q.strip()
+    empty = SearchOut(query=q, courses=[], materials=[], posts=[], notices=[])
+    if len(q) < 2 or not student.department_id:
+        return empty
+    pat = _like(q)
+    dept = student.department_id
+
+    course_rows = (
+        db.query(Course.id, Course.code, Course.title, Level.name, Semester.name)
+        .join(Semester, Course.semester_id == Semester.id)
+        .join(Level, Semester.level_id == Level.id)
+        .filter(Level.department_id == dept)
+        .filter(or_(Course.code.ilike(pat, escape="\\"), Course.title.ilike(pat, escape="\\")))
+        .order_by(Course.code)
+        .limit(8).all()
+    )
+    # Select columns only, so the file bytes are never loaded.
+    material_rows = (
+        db.query(Material.id, Material.title, Material.original_filename, Course.id, Course.code)
+        .join(Course, Material.course_id == Course.id)
+        .join(Semester, Course.semester_id == Semester.id)
+        .join(Level, Semester.level_id == Level.id)
+        .filter(Level.department_id == dept)
+        .filter(or_(Material.title.ilike(pat, escape="\\"), Material.original_filename.ilike(pat, escape="\\")))
+        .order_by(Material.id.desc())
+        .limit(8).all()
+    )
+    posts = (
+        db.query(ForumPost).filter(ForumPost.body.ilike(pat, escape="\\"))
+        .order_by(ForumPost.created_at.desc()).limit(6).all()
+    )
+    notices = (
+        db.query(Announcement)
+        .filter(or_(Announcement.department_id.is_(None), Announcement.department_id == dept))
+        .filter(or_(Announcement.title.ilike(pat, escape="\\"), Announcement.body.ilike(pat, escape="\\")))
+        .order_by(Announcement.created_at.desc()).limit(5).all()
+    )
+    return SearchOut(
+        query=q,
+        courses=[SearchCourse(id=r[0], code=r[1], title=r[2], level_name=r[3], semester_name=r[4]) for r in course_rows],
+        materials=[SearchMaterial(id=r[0], title=r[1], filename=r[2], course_id=r[3], course_code=r[4]) for r in material_rows],
+        posts=[SearchPost(id=p.id, body=p.body[:200], author_name=p.student.full_name, created_at=p.created_at) for p in posts],
+        notices=[SearchNotice(id=n.id, title=n.title, body=n.body[:200], created_at=n.created_at) for n in notices],
+    )
 
 
 @router.get("/me", response_model=StudentOut)

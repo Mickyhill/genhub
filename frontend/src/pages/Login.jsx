@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import HeroSlides from "./HeroSlides";
 import Footer from "./Footer";
 import FeatureRow from "./FeatureRow";
+import InstallPrompt from "./InstallPrompt";
 import client, { saveSession } from "../api/client";
 
 export default function Login() {
@@ -59,6 +60,7 @@ export default function Login() {
         </form>
         <p style={{ marginBottom: 0 }}>New student? <Link to="/register">Create your account</Link><br />Lecturer with an access code? <Link to="/lecturer-signup">Sign up here</Link></p>
       </div>
+      <InstallPrompt />
       <FeatureRow />
       </div>
       <Footer />

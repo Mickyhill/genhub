@@ -17,6 +17,13 @@ function ProtectedRoute({ role, children }) {
   return children;
 }
 
+// Opening the app from the home screen lands a signed-in student or admin straight on their page.
+function Home() {
+  const r = getRole();
+  const to = r === "student" ? "/student" : r === "admin" ? "/admin" : "/login";
+  return <Navigate to={to} replace />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -69,7 +76,7 @@ export default function App() {
           }
         />
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Home />} />
       </Routes>
     </BrowserRouter>
   );

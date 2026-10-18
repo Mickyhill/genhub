@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import HeroSlides from "./HeroSlides";
 import client, { clearSession } from "../api/client";
@@ -9,6 +9,14 @@ import StudentRail from "./StudentRail";
 import Footer from "./Footer";
 import Gallery from "./Gallery";
 import RepTools from "./RepTools";
+import NextClass from "./NextClass";
+import SearchBox from "./SearchBox";
+import InstallPrompt from "./InstallPrompt";
+
+const SEL_KEY = "genhub_sel";
+function readSel() {
+  try { return JSON.parse(localStorage.getItem(SEL_KEY) || "{}") || {}; } catch { return {}; }
+}
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -23,11 +31,23 @@ export default function StudentDashboard() {
   const [results, setResults] = useState([]);
   const [section, setSection] = useState("academics");
   const navigate = useNavigate();
+  // The level and semester picked last time, so the next-lecture card is ready on open.
+  const saved = useRef(readSel());
 
   useEffect(() => {
     client.get("/student/me").then((res) => setProfile(res.data));
-    client.get("/student/levels").then((res) => setLevels(res.data));
+    client.get("/student/levels").then((res) => {
+      setLevels(res.data);
+      const s = saved.current;
+      if (s.levelId && res.data.some((l) => String(l.id) === String(s.levelId))) setLevelId(String(s.levelId));
+    });
   }, []);
+
+  useEffect(() => {
+    if (levelId && semesterId) {
+      try { localStorage.setItem(SEL_KEY, JSON.stringify({ levelId, semesterId })); } catch {}
+    }
+  }, [levelId, semesterId]);
 
   useEffect(() => {
     setSemesterId("");
@@ -35,7 +55,14 @@ export default function StudentDashboard() {
     setCourses([]);
     setTimetable([]);
     if (levelId) {
-      client.get(`/student/semesters?level_id=${levelId}`).then((res) => setSemesters(res.data));
+      client.get(`/student/semesters?level_id=${levelId}`).then((res) => {
+        setSemesters(res.data);
+        const s = saved.current;
+        if (s.semesterId && String(s.levelId) === String(levelId) && res.data.some((x) => String(x.id) === String(s.semesterId))) {
+          setSemesterId(String(s.semesterId));
+        }
+        saved.current = {};
+      });
     }
   }, [levelId]);
 
@@ -66,6 +93,7 @@ export default function StudentDashboard() {
 
   function handleLogout() {
     clearSession();
+    try { localStorage.removeItem(SEL_KEY); } catch {}
     navigate("/login");
   }
 
@@ -97,6 +125,14 @@ export default function StudentDashboard() {
 
       </HeroSlides>
       <div className="container pull-up">
+        <InstallPrompt />
+        <NextClass
+          timetable={timetable}
+          hasSelection={Boolean(semesterId)}
+          onPick={() => go("choose")}
+          onOpenTimetable={() => go("timetable")}
+        />
+        <SearchBox onOpenCommunity={() => { setSection("community"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
         <Tiles items={tiles} />
         <div className="layout">
         <div className="main">
