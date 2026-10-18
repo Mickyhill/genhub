@@ -172,7 +172,28 @@ button.secondary-dark:hover { background: #D3E8DF; }
 .tile-pic img { display: block; width: 100%; height: auto; }
 @media (min-width: 700px) {
   .tiles.pics { display: grid; grid-template-columns: repeat(2, 1fr); overflow: visible; }
+  .tiles.pics.three { grid-template-columns: repeat(3, 1fr); }
   .tile-pic { flex: none; }
+}
+
+/* Moving picture tiles: rise in, then float gently, with a light sweep */
+.tiles.pics { padding-top: 6px; }
+.tile-pic { position: relative; animation: tile-rise .7s cubic-bezier(.2,.7,.2,1) both, tile-float 5.5s ease-in-out 1s infinite; }
+.tile-pic:nth-child(2) { animation-delay: .12s, 1.7s; }
+.tile-pic:nth-child(3) { animation-delay: .24s, 2.4s; }
+.tile-pic:nth-child(4) { animation-delay: .36s, 3.1s; }
+.tile-pic::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.55) 50%, transparent 65%); transform: translateX(-120%); animation: tile-shine 6s ease-in-out 2s infinite; pointer-events: none; }
+.tile-pic:nth-child(2)::after { animation-delay: 3s; }
+.tile-pic:nth-child(3)::after { animation-delay: 4s; }
+.tile-pic:nth-child(4)::after { animation-delay: 5s; }
+.tile-pic img { transition: transform .35s; }
+.tile-pic:hover img { transform: scale(1.04); }
+.tile-pic:active { transform: scale(.97); }
+@keyframes tile-rise { from { opacity: 0; transform: translateY(26px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes tile-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes tile-shine { 0%, 55% { transform: translateX(-120%); } 85%, 100% { transform: translateX(120%); } }
+@media (prefers-reduced-motion: reduce) {
+  .tile-pic, .tile-pic::after { animation: none; }
 }
 
 /* ── FUTIA, our pride ── */

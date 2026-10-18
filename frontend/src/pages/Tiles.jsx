@@ -2,7 +2,7 @@
 export default function Tiles({ items }) {
   const pics = items.length > 0 && items.every((t) => t.pic);
   return (
-    <div className={"tiles" + (pics ? " pics" : "")}>
+    <div className={"tiles" + (pics ? " pics" : "") + (pics && items.length === 3 ? " three" : "")}>
       {items.map((t) => t.pic ? (
         <button key={t.label} type="button" className="tile-pic" onClick={t.onClick} aria-label={`${t.label}. ${t.sub || ""}`}>
           <img src={t.pic} alt="" loading="lazy" />
