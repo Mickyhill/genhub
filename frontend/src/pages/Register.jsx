@@ -49,13 +49,17 @@ export default function Register() {
   }
 
   return (
-    <div className="container">
-      <div className="card" style={{ marginTop: 40 }}>
-        <h1>Create your GenHub account</h1>
-        <p style={{ fontSize: 13, color: "#666" }}>
-          Your level and semester aren't fixed at registration — once you're in,
-          you can freely browse any level/semester within your department.
-        </p>
+    <div className="auth">
+      <div className="hero">
+        <div className="hero-inner">
+          <span className="brand">GenHub</span>
+          <h1>Join your department on GenHub.</h1>
+          <p>Verify your registration number, set a password, and you are in.</p>
+        </div>
+      </div>
+      <div className="card auth-card">
+        <h2>Create your account</h2>
+        <p className="muted">You choose your level and semester after you log in.</p>
         {error && <div className="error">{error}</div>}
 
         <label style={{ fontWeight: 600, fontSize: 14 }}>Registration Number</label>
@@ -64,6 +68,7 @@ export default function Register() {
             placeholder="e.g. 24/SCIT/SEN/045"
             value={regNumber}
             onChange={(e) => setRegNumber(e.target.value)}
+            autoCapitalize="characters"
             style={{ marginBottom: 8 }}
           />
           <button
@@ -77,8 +82,8 @@ export default function Register() {
         </div>
         {resolveError && <div className="error">{resolveError}</div>}
         {resolved && (
-          <div className="card" style={{ background: "#eef2ff", marginBottom: 16 }}>
-            ✓ Matched: <strong>{resolved.department_name}</strong>, {resolved.faculty_name}
+          <div className="notice">
+            Matched: <strong>{resolved.department_name}</strong>, {resolved.faculty_name}
           </div>
         )}
 
@@ -90,7 +95,7 @@ export default function Register() {
           </form>
         )}
 
-        <p style={{ marginTop: 16 }}>Already have an account? <Link to="/login">Log in</Link></p>
+        <p style={{ marginBottom: 0 }}>Already have an account? <Link to="/login">Log in</Link></p>
       </div>
     </div>
   );

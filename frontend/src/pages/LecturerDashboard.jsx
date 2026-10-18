@@ -78,8 +78,13 @@ export default function LecturerDashboard() {
         <strong>GenHub Lecturer</strong>
         <button className="secondary" style={{ width: "auto" }} onClick={handleLogout}>Log out</button>
       </div>
-      <div className="container">
-        {profile && <h2>Welcome, {profile.full_name}</h2>}
+      <div className="hero">
+        <div className="hero-inner">
+          <h1>{profile ? `Hello, ${profile.full_name.split(" ")[0]}.` : "Hello."}</h1>
+          <p>Upload materials and enter results for your assigned courses.</p>
+        </div>
+      </div>
+      <div className="container pull-up">
         {message && <div className="card" style={{ background: "#dcfce7" }}>{message}</div>}
         {error && <div className="card error">{error}</div>}
 

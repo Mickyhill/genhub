@@ -24,16 +24,24 @@ export default function Login() {
   }
 
   return (
-    <div className="container">
-      <div className="card" style={{ marginTop: 60 }}>
-        <h1>GenHub</h1>
-        <p>Students: sign in with your registration number. Admins: use your username.</p>
+    <div className="auth">
+      <div className="hero">
+        <div className="hero-inner">
+          <span className="brand">GenHub</span>
+          <h1>Your timetable, materials and results in one place.</h1>
+          <p>Built for students. Get lecture reminders, study files and your grades on your phone.</p>
+        </div>
+      </div>
+      <div className="card auth-card">
+        <h2>Log in</h2>
+        <p className="muted">Students use their registration number. Admins and lecturers use their username.</p>
         {error && <div className="error">{error}</div>}
         <form onSubmit={handleSubmit}>
           <input
-            placeholder="Registration Number (e.g. 24/SCIT/SEN/045) or Admin Username"
+            placeholder="Reg number or username"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
+            autoCapitalize="characters"
             required
           />
           <input
@@ -43,11 +51,9 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <button type="submit">Log In</button>
+          <button type="submit">Log in</button>
         </form>
-        <p>
-          New student? <Link to="/register">Register here</Link>
-        </p>
+        <p style={{ marginBottom: 0 }}>New student? <Link to="/register">Create your account</Link></p>
       </div>
     </div>
   );

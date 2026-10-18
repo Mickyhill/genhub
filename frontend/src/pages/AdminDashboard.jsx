@@ -460,7 +460,13 @@ export default function AdminDashboard() {
         <strong>GenHub Admin</strong>
         <button className="secondary" style={{ width: "auto" }} onClick={handleLogout}>Log out</button>
       </div>
-      <div className="container">
+      <div className="hero">
+        <div className="hero-inner">
+          <h1>Admin control room</h1>
+          <p>Manage faculties, timetables, students and the community.</p>
+        </div>
+      </div>
+      <div className="container pull-up">
         {message && <div className="card" style={{ background: "#dcfce7" }}>{message}</div>}
         {error && <div className="card error">{error}</div>}
         <Tabs active={section} onChange={setSection} tabs={[["manage", "Manage"], ["community", "Community"]]} />

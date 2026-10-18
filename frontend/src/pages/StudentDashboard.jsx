@@ -70,8 +70,14 @@ export default function StudentDashboard() {
         <strong>GenHub</strong>
         <button className="secondary" style={{ width: "auto" }} onClick={handleLogout}>Log out</button>
       </div>
-      <div className="container">
-        {profile && <h2>Welcome, {profile.full_name}</h2>}
+      <div className="hero">
+        <div className="hero-inner">
+          <h1>{profile ? `Hello, ${profile.full_name.split(" ")[0]}.` : "Hello."}</h1>
+          <p>Pick a level and semester to see your courses, timetable and results.</p>
+          {profile && <div className="chips"><span className="chip amber">{profile.reg_number}</span></div>}
+        </div>
+      </div>
+      <div className="container pull-up">
         <Tabs active={section} onChange={setSection} tabs={[["academics", "Academics"], ["community", "Community"]]} />
         {section === "community" && <StudentCommunity />}
         {section === "academics" && (<>
