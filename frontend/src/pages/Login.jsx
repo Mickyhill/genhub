@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import HeroSlides from "./HeroSlides";
 import client, { saveSession } from "../api/client";
 
 export default function Login() {
@@ -25,13 +26,12 @@ export default function Login() {
 
   return (
     <div className="auth">
-      <div className="hero">
-        <div className="hero-inner">
+      <HeroSlides>
           <span className="brand">GenHub</span>
           <h1>Your timetable, materials and results in one place.</h1>
           <p>Built for students. Get lecture reminders, study files and your grades on your phone.</p>
-        </div>
-      </div>
+
+      </HeroSlides>
       <div className="card auth-card">
         <h2>Log in</h2>
         <p className="muted">Students use their registration number. Admins and lecturers use their username.</p>

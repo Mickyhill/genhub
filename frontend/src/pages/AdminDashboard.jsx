@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Tabs from "./Tabs";
 import AdminCommunity from "./AdminCommunity";
+import HeroSlides from "./HeroSlides";
 import client, { clearSession } from "../api/client";
 
 // Row with just a name (used for Level, Semester).
@@ -460,12 +461,11 @@ export default function AdminDashboard() {
         <strong>GenHub Admin</strong>
         <button className="secondary" style={{ width: "auto" }} onClick={handleLogout}>Log out</button>
       </div>
-      <div className="hero">
-        <div className="hero-inner">
+      <HeroSlides>
           <h1>Admin control room</h1>
           <p>Manage faculties, timetables, students and the community.</p>
-        </div>
-      </div>
+
+      </HeroSlides>
       <div className="container pull-up">
         {message && <div className="card" style={{ background: "#dcfce7" }}>{message}</div>}
         {error && <div className="card error">{error}</div>}

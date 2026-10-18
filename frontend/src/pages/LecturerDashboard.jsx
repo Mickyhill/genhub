@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import HeroSlides from "./HeroSlides";
 import client, { clearSession } from "../api/client";
 
 export default function LecturerDashboard() {
@@ -78,12 +79,11 @@ export default function LecturerDashboard() {
         <strong>GenHub Lecturer</strong>
         <button className="secondary" style={{ width: "auto" }} onClick={handleLogout}>Log out</button>
       </div>
-      <div className="hero">
-        <div className="hero-inner">
+      <HeroSlides>
           <h1>{profile ? `Hello, ${profile.full_name.split(" ")[0]}.` : "Hello."}</h1>
           <p>Upload materials and enter results for your assigned courses.</p>
-        </div>
-      </div>
+
+      </HeroSlides>
       <div className="container pull-up">
         {message && <div className="card" style={{ background: "#dcfce7" }}>{message}</div>}
         {error && <div className="card error">{error}</div>}

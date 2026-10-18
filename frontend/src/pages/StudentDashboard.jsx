@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import HeroSlides from "./HeroSlides";
 import client, { clearSession } from "../api/client";
 import Tabs from "./Tabs";
 import StudentCommunity from "./StudentCommunity";
@@ -70,13 +71,12 @@ export default function StudentDashboard() {
         <strong>GenHub</strong>
         <button className="secondary" style={{ width: "auto" }} onClick={handleLogout}>Log out</button>
       </div>
-      <div className="hero">
-        <div className="hero-inner">
+      <HeroSlides>
           <h1>{profile ? `Hello, ${profile.full_name.split(" ")[0]}.` : "Hello."}</h1>
           <p>Pick a level and semester to see your courses, timetable and results.</p>
           {profile && <div className="chips"><span className="chip amber">{profile.reg_number}</span></div>}
-        </div>
-      </div>
+
+      </HeroSlides>
       <div className="container pull-up">
         <Tabs active={section} onChange={setSection} tabs={[["academics", "Academics"], ["community", "Community"]]} />
         {section === "community" && <StudentCommunity />}

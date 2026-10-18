@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import HeroSlides from "./HeroSlides";
 import client from "../api/client";
 
 export default function Register() {
@@ -50,13 +51,12 @@ export default function Register() {
 
   return (
     <div className="auth">
-      <div className="hero">
-        <div className="hero-inner">
+      <HeroSlides>
           <span className="brand">GenHub</span>
           <h1>Join your department on GenHub.</h1>
           <p>Verify your registration number, set a password, and you are in.</p>
-        </div>
-      </div>
+
+      </HeroSlides>
       <div className="card auth-card">
         <h2>Create your account</h2>
         <p className="muted">You choose your level and semester after you log in.</p>
