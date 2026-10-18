@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import HeroSlides from "./HeroSlides";
 import Footer from "./Footer";
+import FeatureRow from "./FeatureRow";
 import client from "../api/client";
 
 export default function Register() {
@@ -100,11 +101,7 @@ export default function Register() {
 
         <p style={{ marginBottom: 0 }}>Already have an account? <Link to="/login">Log in</Link></p>
       </div>
-      <div className="feature-row">
-        <div className="feature"><span>🗓️</span>Lecture alarms</div>
-        <div className="feature"><span>📚</span>Study files</div>
-        <div className="feature"><span>🎓</span>Your results</div>
-      </div>
+      <FeatureRow />
       </div>
       <Footer />
     </div>

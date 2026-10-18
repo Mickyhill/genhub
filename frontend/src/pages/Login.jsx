@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import HeroSlides from "./HeroSlides";
 import Footer from "./Footer";
+import FeatureRow from "./FeatureRow";
 import client, { saveSession } from "../api/client";
 
 export default function Login() {
@@ -58,11 +59,7 @@ export default function Login() {
         </form>
         <p style={{ marginBottom: 0 }}>New student? <Link to="/register">Create your account</Link><br />Lecturer with an access code? <Link to="/lecturer-signup">Sign up here</Link></p>
       </div>
-      <div className="feature-row">
-        <div className="feature"><span>🗓️</span>Lecture alarms</div>
-        <div className="feature"><span>📚</span>Study files</div>
-        <div className="feature"><span>🎓</span>Your results</div>
-      </div>
+      <FeatureRow />
       </div>
       <Footer />
     </div>
