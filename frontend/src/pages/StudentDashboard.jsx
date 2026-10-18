@@ -4,6 +4,9 @@ import HeroSlides from "./HeroSlides";
 import client, { clearSession } from "../api/client";
 import Tabs from "./Tabs";
 import StudentCommunity from "./StudentCommunity";
+import Tiles from "./Tiles";
+import StudentRail from "./StudentRail";
+import Footer from "./Footer";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -45,6 +48,20 @@ export default function StudentDashboard() {
     }
   }, [semesterId]);
 
+  function go(id) {
+    setSection("academics");
+    setTimeout(() => {
+      const el = document.getElementById(id) || document.getElementById("choose");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  }
+  const tiles = [
+    { label: "Courses", sub: "Materials and notes", icon: "📚", img: "/img/s2.jpg", onClick: () => go("courses") },
+    { label: "Timetable", sub: "Alarms for lectures", icon: "🗓️", img: "/img/s4.jpg", tone: "orange", onClick: () => go("timetable") },
+    { label: "Results", sub: "CA, exam and grade", icon: "🎓", img: "/img/s3.jpg", onClick: () => go("results") },
+    { label: "Community", sub: "Forum and messages", icon: "💬", tone: "plain", onClick: () => setSection("community") },
+  ];
+
   function handleLogout() {
     clearSession();
     navigate("/login");
@@ -78,11 +95,14 @@ export default function StudentDashboard() {
 
       </HeroSlides>
       <div className="container pull-up">
+        <Tiles items={tiles} />
+        <div className="layout">
+        <div className="main">
         <Tabs active={section} onChange={setSection} tabs={[["academics", "Academics"], ["community", "Community"]]} />
         {section === "community" && <StudentCommunity />}
         {section === "academics" && (<>
 
-        <div className="card">
+        <div className="card" id="choose">
           <h3>Choose what to view</h3>
           <p style={{ fontSize: 13, color: "#666" }}>
             Pick a level and semester to see its courses, timetable, and materials.
@@ -98,9 +118,18 @@ export default function StudentDashboard() {
           </select>
         </div>
 
+        {!semesterId && (
+          <div className="promo" style={{ backgroundImage: "url(/img/s4.jpg)", minHeight: 200 }}>
+            <div className="promo-body">
+              <h3>Start with your level</h3>
+              <p>Pick a level and semester above. Your courses, timetable, study files and results show up right here.</p>
+            </div>
+          </div>
+        )}
+
         {semesterId && (
           <>
-            <div className="card">
+            <div className="card" id="courses">
               <h3>Courses</h3>
               {courses.length === 0 && <p>No courses found for this level/semester yet.</p>}
               {courses.map((c) => (
@@ -113,7 +142,7 @@ export default function StudentDashboard() {
               ))}
             </div>
 
-            <div className="card">
+            <div className="card" id="timetable">
               <h3>Timetable</h3>
               {sortedTimetable.length === 0 && <p>No timetable entries yet.</p>}
               {sortedTimetable.map((t) => (
@@ -134,7 +163,7 @@ export default function StudentDashboard() {
               </p>
             </div>
 
-            <div className="card">
+            <div className="card" id="results">
               <h3>Results</h3>
               {results.length === 0 && <p>No results published yet for this semester.</p>}
               {results.map((r) => (
@@ -148,7 +177,13 @@ export default function StudentDashboard() {
           </>
         )}
         </>)}
+        </div>
+        <aside className="rail">
+          <StudentRail onOpenCommunity={() => setSection("community")} onGoTimetable={() => go("timetable")} />
+        </aside>
+        </div>
       </div>
+      <Footer />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import HeroSlides from "./HeroSlides";
+import Footer from "./Footer";
 import client from "../api/client";
 
 export default function Register() {
@@ -57,6 +58,7 @@ export default function Register() {
           <p>Verify your registration number, set a password, and you are in.</p>
 
       </HeroSlides>
+      <div>
       <div className="card auth-card">
         <h2>Create your account</h2>
         <p className="muted">You choose your level and semester after you log in.</p>
@@ -97,6 +99,13 @@ export default function Register() {
 
         <p style={{ marginBottom: 0 }}>Already have an account? <Link to="/login">Log in</Link></p>
       </div>
+      <div className="feature-row">
+        <div className="feature"><span>🗓️</span>Lecture alarms</div>
+        <div className="feature"><span>📚</span>Study files</div>
+        <div className="feature"><span>🎓</span>Your results</div>
+      </div>
+      </div>
+      <Footer />
     </div>
   );
 }

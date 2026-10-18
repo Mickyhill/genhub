@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import HeroSlides from "./HeroSlides";
+import Footer from "./Footer";
 import client, { clearSession } from "../api/client";
 
 export default function LecturerDashboard() {
@@ -131,6 +132,7 @@ export default function LecturerDashboard() {
           </>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

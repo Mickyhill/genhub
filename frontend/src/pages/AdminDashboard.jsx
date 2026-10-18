@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Tabs from "./Tabs";
 import AdminCommunity from "./AdminCommunity";
+import Tiles from "./Tiles";
+import Footer from "./Footer";
 import HeroSlides from "./HeroSlides";
 import client, { clearSession } from "../api/client";
 
@@ -447,6 +449,11 @@ export default function AdminDashboard() {
     } catch (err) { flash(err.response?.data?.detail || "Upload failed", true); }
   }
 
+  function jump(id) {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function handleLogout() {
     clearSession();
     navigate("/login");
@@ -474,26 +481,33 @@ export default function AdminDashboard() {
         {section === "manage" && (<>
 
         {analytics && (
-          <div className="card">
-            <h3>Overview</h3>
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-              <span>👨‍🎓 {analytics.total_students} students</span>
-              <span>🏫 {analytics.total_faculties} faculties</span>
-              <span>🏛 {analytics.total_departments} departments</span>
-              <span>📚 {analytics.total_courses} courses</span>
-              <span>📄 {analytics.total_materials} materials</span>
-              <span>👩‍🏫 {analytics.total_lecturers} lecturers</span>
+          <>
+            <div className="stats">
+              <div className="stat">👨‍🎓<b>{analytics.total_students}</b><span>Students</span></div>
+              <div className="stat">🏫<b>{analytics.total_faculties}</b><span>Faculties</span></div>
+              <div className="stat">🏛<b>{analytics.total_departments}</b><span>Departments</span></div>
+              <div className="stat">📚<b>{analytics.total_courses}</b><span>Courses</span></div>
+              <div className="stat">📄<b>{analytics.total_materials}</b><span>Materials</span></div>
+              <div className="stat">👩‍🏫<b>{analytics.total_lecturers}</b><span>Lecturers</span></div>
             </div>
             {analytics.departments_missing_reg_ranges.length > 0 && (
-              <div className="card error" style={{ marginTop: 12 }}>
-                ⚠️ These departments have no registration range set — students can't register into them yet:{" "}
+              <div className="card error">
+                ⚠️ These departments have no registration range set. Students cannot register into them yet:{" "}
                 {analytics.departments_missing_reg_ranges.join(", ")}
               </div>
             )}
-          </div>
+          </>
         )}
 
-        <div className="card">
+        <Tiles items={[
+          { label: "Lecturers", sub: "Create and assign", icon: "👩‍🏫", img: "/img/s2.jpg", onClick: () => jump("lecturers") },
+          { label: "Password reset", sub: "Help a student", icon: "🔑", img: "/img/s4.jpg", tone: "orange", onClick: () => jump("reset") },
+          { label: "Academic setup", sub: "Faculties to materials", icon: "🏛", img: "/img/s3.jpg", onClick: () => jump("hierarchy") },
+          { label: "Community", sub: "News, forum, inbox", icon: "💬", tone: "plain", onClick: () => { setSection("community"); window.scrollTo({ top: 0, behavior: "smooth" }); } },
+        ]} />
+
+        <div className="masonry">
+        <div className="card" id="lecturers">
           <h3>Lecturers</h3>
           <form onSubmit={handleCreateLecturer}>
             <input placeholder="Username" value={newLecturerUsername} onChange={(e) => setNewLecturerUsername(e.target.value)} required />
@@ -539,7 +553,7 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        <div className="card">
+        <div className="card" id="reset">
           <h3>Student Password Reset</h3>
           <p style={{ fontSize: 13, color: "#666" }}>
             Look up a student by registration number, then set a new password for them directly.
@@ -559,7 +573,7 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        <div className="card">
+        <div className="card" id="hierarchy">
           <h3>1. Faculty / School</h3>
           <form onSubmit={handleCreateFaculty}>
             <div style={{ display: "flex", gap: 8 }}>
@@ -723,8 +737,10 @@ export default function AdminDashboard() {
             </div>
           </>
         )}
+        </div>
         </>)}
       </div>
+      <Footer />
     </div>
   );
 }

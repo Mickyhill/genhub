@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import HeroSlides from "./HeroSlides";
+import Footer from "./Footer";
 import client, { saveSession } from "../api/client";
 
 export default function Login() {
@@ -32,6 +33,7 @@ export default function Login() {
           <p>Built for students. Get lecture reminders, study files and your grades on your phone.</p>
 
       </HeroSlides>
+      <div>
       <div className="card auth-card">
         <h2>Log in</h2>
         <p className="muted">Students use their registration number. Admins and lecturers use their username.</p>
@@ -55,6 +57,13 @@ export default function Login() {
         </form>
         <p style={{ marginBottom: 0 }}>New student? <Link to="/register">Create your account</Link></p>
       </div>
+      <div className="feature-row">
+        <div className="feature"><span>🗓️</span>Lecture alarms</div>
+        <div className="feature"><span>📚</span>Study files</div>
+        <div className="feature"><span>🎓</span>Your results</div>
+      </div>
+      </div>
+      <Footer />
     </div>
   );
 }
