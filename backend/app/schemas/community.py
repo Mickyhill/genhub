@@ -14,6 +14,8 @@ class AnnouncementOut(BaseModel):
     title: str
     body: str
     created_at: datetime
+    department_id: Optional[int] = None
+    author_name: Optional[str] = None
 
 
 class TextBody(BaseModel):

@@ -22,7 +22,7 @@ export default function StudentRail({ onOpenCommunity, onGoTimetable, onOpenPrid
           <div key={a.id} className="news-item">
             <strong>{a.title}</strong>
             <p className="muted">{a.body.length > 90 ? a.body.slice(0, 90) + "…" : a.body}</p>
-            <small className="muted">{fmt(a.created_at)}</small>
+            <small className="muted">{fmt(a.created_at)}{a.author_name && a.author_name !== "Admin" ? ` · ${a.author_name}` : ""}</small>
           </div>
         ))}
         <button type="button" className="small" onClick={onOpenCommunity}>See all news</button>

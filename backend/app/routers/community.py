@@ -1,6 +1,7 @@
 """Community features. Students and admins get separate routers; lecturers
 have no access to any of this (announcements never reach them)."""
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -26,8 +27,11 @@ def _post_out(p: ForumPost, viewer_id=None, admin=False) -> ForumPostOut:
 
 # ── Student side ──────────────────────────────────────────────────────
 @student_router.get("/announcements", response_model=list[AnnouncementOut])
-def s_announcements(db: Session = Depends(get_db), _: Student = Depends(get_current_student)):
-    return db.query(Announcement).order_by(Announcement.created_at.desc()).limit(50).all()
+def s_announcements(db: Session = Depends(get_db), me: Student = Depends(get_current_student)):
+    q = db.query(Announcement).filter(
+        or_(Announcement.department_id.is_(None), Announcement.department_id == me.department_id)
+    )
+    return q.order_by(Announcement.created_at.desc()).limit(50).all()
 
 
 @student_router.get("/forum", response_model=list[ForumPostOut])
@@ -78,7 +82,7 @@ def a_announcements(db: Session = Depends(get_db)):
 
 @admin_router.post("/announcements", response_model=AnnouncementOut)
 def a_announce(data: AnnouncementCreate, db: Session = Depends(get_db)):
-    a = Announcement(title=data.title.strip(), body=data.body.strip())
+    a = Announcement(title=data.title.strip(), body=data.body.strip(), author_name="Admin")
     db.add(a); db.commit(); db.refresh(a)
     return a
 

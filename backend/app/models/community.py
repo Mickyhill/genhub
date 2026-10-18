@@ -11,6 +11,9 @@ class Announcement(Base):
     title = Column(String, nullable=False)
     body = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    # NULL means "everyone". A number means only that department sees it (posted by a class rep).
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
+    author_name = Column(String, nullable=True)
 
 
 class ForumPost(Base):

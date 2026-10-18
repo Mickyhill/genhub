@@ -56,3 +56,10 @@ def get_current_lecturer(lecturer: Lecturer = Depends(get_current_lecturer_any))
     if lecturer.must_change_password:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Password change required")
     return lecturer
+
+
+def get_current_rep(student: Student = Depends(get_current_student)) -> Student:
+    """A student the admin has made a class rep. Always limited to their own department."""
+    if not student.is_rep or not student.department_id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Class rep access required")
+    return student

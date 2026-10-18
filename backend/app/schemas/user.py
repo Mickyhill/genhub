@@ -14,6 +14,7 @@ class StudentOut(BaseModel):
     reg_number: str
     full_name: str
     department_id: Optional[int] = None
+    is_rep: bool = False
 
 
 class AdminCreate(BaseModel):
@@ -72,3 +73,10 @@ class Token(BaseModel):
 class PasswordResetRequest(BaseModel):
     reg_number: str
     new_password: str
+
+
+class LecturerSignup(BaseModel):
+    code: str
+    full_name: str
+    username: str
+    password: str

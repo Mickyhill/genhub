@@ -23,6 +23,8 @@ class Student(Base):
     level_id = Column(Integer, ForeignKey("levels.id"), nullable=True)
     semester_id = Column(Integer, ForeignKey("semesters.id"), nullable=True)
 
+    is_rep = Column(Boolean, nullable=False, default=False, server_default=text("false"))
+
     department = relationship("Department", back_populates="students")
 
 

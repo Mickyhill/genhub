@@ -49,7 +49,7 @@ function News() {
         <div className="card" key={a.id}>
           <h3>{a.title}</h3>
           <p style={{ whiteSpace: "pre-wrap" }}>{a.body}</p>
-          <small className="muted">{fmt(a.created_at)}</small>{" "}
+          <small className="muted">{fmt(a.created_at)}{a.author_name ? ` · ${a.author_name}` : ""}{a.department_id ? " · one department only" : " · everyone"}</small>{" "}
           <button className="danger small" onClick={() => remove(a.id)}>Delete</button>
         </div>
       ))}

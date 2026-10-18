@@ -56,7 +56,7 @@ export default function Login() {
           />
           <button type="submit">Log in</button>
         </form>
-        <p style={{ marginBottom: 0 }}>New student? <Link to="/register">Create your account</Link></p>
+        <p style={{ marginBottom: 0 }}>New student? <Link to="/register">Create your account</Link><br />Lecturer with an access code? <Link to="/lecturer-signup">Sign up here</Link></p>
       </div>
       <div className="feature-row">
         <div className="feature"><span>🗓️</span>Lecture alarms</div>

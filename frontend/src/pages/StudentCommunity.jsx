@@ -30,7 +30,7 @@ function News() {
     <div className="card" key={a.id}>
       <h3>{a.title}</h3>
       <p style={{ whiteSpace: "pre-wrap" }}>{a.body}</p>
-      <small className="muted">{fmt(a.created_at)}</small>
+      <small className="muted">{fmt(a.created_at)}{a.author_name ? ` · ${a.author_name}` : ""}</small>
     </div>
   ));
 }

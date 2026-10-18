@@ -5,6 +5,7 @@ import AdminCommunity from "./AdminCommunity";
 import Tiles from "./Tiles";
 import Footer from "./Footer";
 import AdminGallery from "./AdminGallery";
+import RepsAdmin from "./RepsAdmin";
 import HeroSlides from "./HeroSlides";
 import client, { clearSession } from "../api/client";
 
@@ -493,8 +494,9 @@ export default function AdminDashboard() {
       <div className="container pull-up">
         {message && <div className="card" style={{ background: "#dcfce7" }}>{message}</div>}
         {error && <div className="card error">{error}</div>}
-        <Tabs active={section} onChange={setSection} tabs={[["manage", "Manage"], ["community", "Community"], ["pride", "FUTIA, our pride"]]} />
+        <Tabs active={section} onChange={setSection} tabs={[["manage", "Manage"], ["community", "Community"], ["reps", "Reps and codes"], ["pride", "FUTIA, our pride"]]} />
         {section === "community" && <AdminCommunity />}
+        {section === "reps" && <RepsAdmin />}
         {section === "pride" && <AdminGallery />}
         {section === "manage" && (<>
 

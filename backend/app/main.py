@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.database import Base, engine
-from app.routers import auth, admin, public, student, lecturer, community, gallery
+from app.routers import auth, admin, public, student, lecturer, community, gallery, invites, rep
 
 # Creates tables if they don't exist. Fine for local dev; for real
 # production changes later, switch to Alembic migrations.
@@ -15,6 +15,8 @@ def _add_missing_columns():
     from sqlalchemy import inspect, text
     insp = inspect(engine)
     wanted = {
+        "students": [("is_rep", "BOOLEAN NOT NULL DEFAULT FALSE")],
+        "announcements": [("department_id", "INTEGER"), ("author_name", "VARCHAR")],
         "lecturers": [
             ("is_active", "BOOLEAN NOT NULL DEFAULT TRUE"),
             ("must_change_password", "BOOLEAN NOT NULL DEFAULT FALSE"),
@@ -62,6 +64,9 @@ app.include_router(community.student_router)
 app.include_router(community.admin_router)
 app.include_router(gallery.public_router)
 app.include_router(gallery.admin_router)
+app.include_router(invites.rep_router)
+app.include_router(invites.admin_router)
+app.include_router(rep.router)
 
 
 @app.get("/")

@@ -8,6 +8,7 @@ import Tiles from "./Tiles";
 import StudentRail from "./StudentRail";
 import Footer from "./Footer";
 import Gallery from "./Gallery";
+import RepTools from "./RepTools";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -99,9 +100,10 @@ export default function StudentDashboard() {
         <Tiles items={tiles} />
         <div className="layout">
         <div className="main">
-        <Tabs active={section} onChange={setSection} tabs={[["academics", "Academics"], ["community", "Community"], ["pride", "FUTIA, our pride"]]} />
+        <Tabs active={section} onChange={setSection} tabs={[["academics", "Academics"], ["community", "Community"], ["pride", "FUTIA, our pride"], ...(profile?.is_rep ? [["rep", "Class rep tools"]] : [])]} />
         {section === "community" && <StudentCommunity />}
         {section === "pride" && <Gallery />}
+        {section === "rep" && profile?.is_rep && <RepTools />}
         {section === "academics" && (<>
 
         <div className="card" id="choose">

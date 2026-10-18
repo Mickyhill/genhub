@@ -3,6 +3,7 @@ from app.models.user import Student, Admin, Lecturer, UserRole
 from app.models.academic_extra import TimetableEntry, Material, RegNumberRange, LecturerCourse, Result
 from app.models.community import Announcement, ForumPost, SupportMessage, Suggestion
 from app.models.gallery import GalleryItem
+from app.models.invite import LecturerInvite, LecturerInviteCourse
 
 __all__ = [
     "Faculty", "Department", "Level", "Semester", "Course",
@@ -10,4 +11,5 @@ __all__ = [
     "TimetableEntry", "Material", "RegNumberRange", "LecturerCourse", "Result",
     "Announcement", "ForumPost", "SupportMessage", "Suggestion",
     "GalleryItem",
+    "LecturerInvite", "LecturerInviteCourse",
 ]

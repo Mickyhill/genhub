@@ -5,8 +5,9 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import hash_password, verify_password, create_access_token, decode_access_token
 from app.core.reg_number import parse_reg_number
-from app.models import Student, Admin, Lecturer, Faculty, Department, RegNumberRange
-from app.schemas.user import StudentRegister, StudentOut, AdminCreate, AdminOut, LoginRequest, Token
+from datetime import datetime
+from app.models import Student, Admin, Lecturer, Faculty, Department, RegNumberRange, LecturerCourse, LecturerInvite
+from app.schemas.user import StudentRegister, StudentOut, AdminCreate, AdminOut, LoginRequest, Token, LecturerSignup
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -146,3 +147,44 @@ def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)):
 
     _record_fail(key)
     raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid registration number/username or password")
+
+
+@router.post("/register/lecturer", response_model=Token)
+def register_lecturer(data: LecturerSignup, request: Request, db: Session = Depends(get_db)):
+    """A lecturer signs up with a single-use code that an admin or class rep gave them in person."""
+    from app.routers.invites import hash_code
+    key = _client_key(request, "LECTURER-CODE")
+    _check_locked(key)
+
+    inv = db.query(LecturerInvite).filter(LecturerInvite.code_hash == hash_code(data.code)).first()
+    if (not inv or inv.revoked or inv.used_at or inv.expires_at < datetime.utcnow()):
+        _record_fail(key)
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This access code is not valid. Ask your class rep or the admin for a new one.")
+
+    username = data.username.strip()
+    if len(username) < 3:
+        raise HTTPException(400, "Username needs at least 3 characters")
+    if len(data.password) < 8:
+        raise HTTPException(400, "Password needs at least 8 characters")
+    if not data.full_name.strip():
+        raise HTTPException(400, "Enter your full name")
+    taken = (
+        db.query(Lecturer).filter(Lecturer.username == username).first()
+        or db.query(Admin).filter(Admin.username == username).first()
+    )
+    if taken:
+        raise HTTPException(400, "That username is taken. Choose another.")
+
+    lecturer = Lecturer(
+        username=username, full_name=data.full_name.strip(),
+        hashed_password=hash_password(data.password), must_change_password=False,
+    )
+    db.add(lecturer); db.flush()
+    for ic in inv.courses:
+        db.add(LecturerCourse(lecturer_id=lecturer.id, course_id=ic.course_id))
+    inv.used_at = datetime.utcnow()
+    inv.used_by_lecturer_id = lecturer.id
+    db.commit()
+    _fails.pop(key, None)
+    token = create_access_token({"sub": str(lecturer.id), "role": "lecturer"})
+    return Token(access_token=token, role="lecturer")
