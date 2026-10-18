@@ -25,8 +25,12 @@ export default function LecturerDashboard() {
   }
 
   useEffect(() => {
-    client.get("/lecturer/me").then((res) => setProfile(res.data));
-    client.get("/lecturer/courses").then((res) => setCourses(res.data));
+    client.get("/lecturer/me").then((res) => setProfile(res.data)).catch((err) => {
+      const detail = err.response?.data?.detail || "";
+      if (detail === "Password change required") navigate("/change-password");
+      else if (err.response?.status === 401 || detail.includes("suspended")) { clearSession(); navigate("/login"); }
+    });
+    client.get("/lecturer/courses").then((res) => setCourses(res.data)).catch(() => {});
   }, []);
 
   function loadMaterials(courseId) {

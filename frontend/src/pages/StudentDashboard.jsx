@@ -7,6 +7,7 @@ import StudentCommunity from "./StudentCommunity";
 import Tiles from "./Tiles";
 import StudentRail from "./StudentRail";
 import Footer from "./Footer";
+import Gallery from "./Gallery";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -98,8 +99,9 @@ export default function StudentDashboard() {
         <Tiles items={tiles} />
         <div className="layout">
         <div className="main">
-        <Tabs active={section} onChange={setSection} tabs={[["academics", "Academics"], ["community", "Community"]]} />
+        <Tabs active={section} onChange={setSection} tabs={[["academics", "Academics"], ["community", "Community"], ["pride", "FUTIA, our pride"]]} />
         {section === "community" && <StudentCommunity />}
+        {section === "pride" && <Gallery />}
         {section === "academics" && (<>
 
         <div className="card" id="choose">
@@ -179,7 +181,7 @@ export default function StudentDashboard() {
         </>)}
         </div>
         <aside className="rail">
-          <StudentRail onOpenCommunity={() => setSection("community")} onGoTimetable={() => go("timetable")} />
+          <StudentRail onOpenPride={() => { setSection("pride"); window.scrollTo({ top: 0, behavior: "smooth" }); }} onOpenCommunity={() => setSection("community")} onGoTimetable={() => go("timetable")} />
         </aside>
         </div>
       </div>

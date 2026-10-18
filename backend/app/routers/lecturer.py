@@ -2,13 +2,35 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.deps import get_current_lecturer
+from app.core.deps import get_current_lecturer, get_current_lecturer_any
+from app.core.security import hash_password, verify_password
 from app.models import Lecturer, LecturerCourse, Course, Material, TimetableEntry, Student, Result
 from app.schemas.academic import (
     AssignedCourseOut, MaterialOut, TimetableEntryCreate, TimetableEntryOut,
     ResultCreate, ResultOut,
 )
-from app.schemas.user import LecturerOut, StudentOut
+from app.schemas.user import LecturerOut, StudentOut, ChangePasswordRequest
+
+account_router = APIRouter(prefix="/lecturer", tags=["lecturer"])
+
+
+@account_router.post("/change-password")
+def change_password(
+    data: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    lecturer: Lecturer = Depends(get_current_lecturer_any),
+):
+    if not verify_password(data.current_password, lecturer.hashed_password):
+        raise HTTPException(400, "Current password is wrong")
+    if len(data.new_password) < 8:
+        raise HTTPException(400, "New password must be at least 8 characters")
+    if data.new_password == data.current_password:
+        raise HTTPException(400, "Choose a password different from the temporary one")
+    lecturer.hashed_password = hash_password(data.new_password)
+    lecturer.must_change_password = False
+    db.commit()
+    return {"ok": True}
+
 
 router = APIRouter(prefix="/lecturer", tags=["lecturer"], dependencies=[Depends(get_current_lecturer)])
 

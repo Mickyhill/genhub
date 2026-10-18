@@ -38,12 +38,21 @@ def get_current_admin(
     return admin
 
 
-def get_current_lecturer(
+def get_current_lecturer_any(
     payload: dict = Depends(get_current_payload), db: Session = Depends(get_db)
 ) -> Lecturer:
+    """Lecturer, even if they still must change their password."""
     if payload.get("role") != "lecturer":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Lecturer access required")
     lecturer = db.query(Lecturer).filter(Lecturer.id == payload.get("sub")).first()
     if not lecturer:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Lecturer not found")
+    if not lecturer.is_active:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This account is suspended. Contact the admin.")
+    return lecturer
+
+
+def get_current_lecturer(lecturer: Lecturer = Depends(get_current_lecturer_any)) -> Lecturer:
+    if lecturer.must_change_password:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Password change required")
     return lecturer

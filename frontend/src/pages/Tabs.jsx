@@ -7,7 +7,7 @@ export default function Tabs({ tabs, active, onChange }) {
           role="tab"
           aria-selected={active === key}
           className={"tab" + (active === key ? " active" : "")}
-          onClick={() => onChange(key)}
+          onClick={(e) => { onChange(key); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }}
         >
           {label}{badge ? <span className="badge">{badge}</span> : null}
         </button>

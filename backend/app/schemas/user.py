@@ -40,6 +40,21 @@ class LecturerOut(BaseModel):
     id: int
     username: str
     full_name: str
+    is_active: bool = True
+    must_change_password: bool = False
+
+
+class LecturerActiveUpdate(BaseModel):
+    is_active: bool
+
+
+class LecturerPasswordReset(BaseModel):
+    password: str
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
 
 
 class LoginRequest(BaseModel):
@@ -51,6 +66,7 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
     role: str
+    must_change_password: bool = False
 
 
 class PasswordResetRequest(BaseModel):

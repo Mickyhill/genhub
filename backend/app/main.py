@@ -3,11 +3,35 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.database import Base, engine
-from app.routers import auth, admin, public, student, lecturer, community
+from app.routers import auth, admin, public, student, lecturer, community, gallery
 
 # Creates tables if they don't exist. Fine for local dev; for real
 # production changes later, switch to Alembic migrations.
 Base.metadata.create_all(bind=engine)
+
+
+def _add_missing_columns():
+    """Adds new columns to existing tables so no manual SQL is needed."""
+    from sqlalchemy import inspect, text
+    insp = inspect(engine)
+    wanted = {
+        "lecturers": [
+            ("is_active", "BOOLEAN NOT NULL DEFAULT TRUE"),
+            ("must_change_password", "BOOLEAN NOT NULL DEFAULT FALSE"),
+        ]
+    }
+    with engine.begin() as conn:
+        for table, cols in wanted.items():
+            if table not in insp.get_table_names():
+                continue
+            have = {c["name"] for c in insp.get_columns(table)}
+            for name, ddl in cols:
+                if name not in have:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
+
+
+_add_missing_columns()
+gallery.seed_gallery()
 
 ALLOWED_ORIGINS = [
     o.strip()
@@ -33,8 +57,11 @@ app.include_router(public.router)
 app.include_router(admin.router)
 app.include_router(student.router)
 app.include_router(lecturer.router)
+app.include_router(lecturer.account_router)
 app.include_router(community.student_router)
 app.include_router(community.admin_router)
+app.include_router(gallery.public_router)
+app.include_router(gallery.admin_router)
 
 
 @app.get("/")

@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import client from "../api/client";
+import { galleryImage } from "./Gallery";
 
 const fmt = (d) => new Date(d + "Z").toLocaleDateString([], { dateStyle: "medium" });
 
-export default function StudentRail({ onOpenCommunity, onGoTimetable }) {
+export default function StudentRail({ onOpenCommunity, onGoTimetable, onOpenPride }) {
   const [news, setNews] = useState(null);
+  const [lead, setLead] = useState(null);
   useEffect(() => {
     client.get("/student/community/announcements").then((r) => setNews(r.data.slice(0, 3))).catch(() => setNews([]));
+  client.get("/browse/gallery").then((r) => setLead(r.data[0] || null)).catch(() => {});
   }, []);
 
   return (
@@ -24,6 +27,13 @@ export default function StudentRail({ onOpenCommunity, onGoTimetable }) {
         ))}
         <button type="button" className="small" onClick={onOpenCommunity}>See all news</button>
       </div>
+
+      {lead && (
+        <button type="button" className="pride-rail" onClick={onOpenPride} aria-label="Open FUTIA, our pride">
+          <img src={galleryImage(lead.id)} alt="" loading="lazy" />
+          <span className="pride-cap"><b>FUTIA, our pride</b><span>{lead.title}</span></span>
+        </button>
+      )}
 
       <div className="promo" style={{ backgroundImage: "url(/img/s2.jpg)" }}>
         <div className="promo-body">

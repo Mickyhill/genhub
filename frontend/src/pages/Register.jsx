@@ -60,6 +60,7 @@ export default function Register() {
       </HeroSlides>
       <div>
       <div className="card auth-card">
+        <img className="login-logo" src="/img/genhub-logo.png" alt="GenHub" />
         <h2>Create your account</h2>
         <p className="muted">You choose your level and semester after you log in.</p>
         {error && <div className="error">{error}</div>}

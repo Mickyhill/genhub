@@ -19,7 +19,7 @@ from app.schemas.academic import (
     ResultCreate, ResultOut,
     AnalyticsOverview,
 )
-from app.schemas.user import StudentOut, PasswordResetRequest, LecturerCreate, LecturerOut
+from app.schemas.user import StudentOut, PasswordResetRequest, LecturerCreate, LecturerOut, LecturerActiveUpdate, LecturerPasswordReset
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(get_current_admin)])
 
@@ -375,6 +375,7 @@ def create_lecturer(data: LecturerCreate, db: Session = Depends(get_db)):
         username=data.username,
         full_name=data.full_name,
         hashed_password=hash_password(data.password),
+        must_change_password=True,  # the lecturer sets their own password at first login
     )
     db.add(lecturer)
     db.commit()
@@ -385,6 +386,31 @@ def create_lecturer(data: LecturerCreate, db: Session = Depends(get_db)):
 @router.get("/lecturers", response_model=list[LecturerOut])
 def list_lecturers(db: Session = Depends(get_db)):
     return db.query(Lecturer).all()
+
+
+@router.patch("/lecturers/{lecturer_id}/active", response_model=LecturerOut)
+def set_lecturer_active(lecturer_id: int, data: LecturerActiveUpdate, db: Session = Depends(get_db)):
+    lecturer = db.query(Lecturer).filter(Lecturer.id == lecturer_id).first()
+    if not lecturer:
+        raise HTTPException(404, "Lecturer not found")
+    lecturer.is_active = data.is_active
+    db.commit()
+    db.refresh(lecturer)
+    return lecturer
+
+
+@router.post("/lecturers/{lecturer_id}/reset-password", response_model=LecturerOut)
+def reset_lecturer_password(lecturer_id: int, data: LecturerPasswordReset, db: Session = Depends(get_db)):
+    if len(data.password) < 6:
+        raise HTTPException(400, "Temporary password must be at least 6 characters")
+    lecturer = db.query(Lecturer).filter(Lecturer.id == lecturer_id).first()
+    if not lecturer:
+        raise HTTPException(404, "Lecturer not found")
+    lecturer.hashed_password = hash_password(data.password)
+    lecturer.must_change_password = True
+    db.commit()
+    db.refresh(lecturer)
+    return lecturer
 
 
 @router.delete("/lecturers/{lecturer_id}")

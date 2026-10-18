@@ -15,10 +15,10 @@ export default function Login() {
     setError("");
     try {
       const res = await client.post("/auth/login", { identifier, password });
-      const { access_token, role } = res.data;
+      const { access_token, role, must_change_password } = res.data;
       saveSession(access_token, role);
       if (role === "admin") navigate("/admin");
-      else if (role === "lecturer") navigate("/lecturer");
+      else if (role === "lecturer") navigate(must_change_password ? "/change-password" : "/lecturer");
       else navigate("/student");
     } catch (err) {
       setError(err.response?.data?.detail || "Login failed");
@@ -35,6 +35,7 @@ export default function Login() {
       </HeroSlides>
       <div>
       <div className="card auth-card">
+        <img className="login-logo" src="/img/genhub-logo.png" alt="GenHub" />
         <h2>Log in</h2>
         <p className="muted">Students use their registration number. Admins and lecturers use their username.</p>
         {error && <div className="error">{error}</div>}

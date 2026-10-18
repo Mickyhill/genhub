@@ -7,6 +7,7 @@ import StudentDashboard from "./pages/StudentDashboard";
 import CourseMaterials from "./pages/CourseMaterials";
 import AdminDashboard from "./pages/AdminDashboard";
 import LecturerDashboard from "./pages/LecturerDashboard";
+import ChangePassword from "./pages/ChangePassword";
 
 function ProtectedRoute({ role, children }) {
   const actualRole = getRole();
@@ -53,6 +54,15 @@ export default function App() {
           element={
             <ProtectedRoute role="lecturer">
               <LecturerDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/change-password"
+          element={
+            <ProtectedRoute role="lecturer">
+              <ChangePassword />
             </ProtectedRoute>
           }
         />

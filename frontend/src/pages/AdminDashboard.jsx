@@ -4,6 +4,7 @@ import Tabs from "./Tabs";
 import AdminCommunity from "./AdminCommunity";
 import Tiles from "./Tiles";
 import Footer from "./Footer";
+import AdminGallery from "./AdminGallery";
 import HeroSlides from "./HeroSlides";
 import client, { clearSession } from "../api/client";
 
@@ -185,6 +186,22 @@ export default function AdminDashboard() {
       if (String(id) === String(selectedLecturerId)) setSelectedLecturerId("");
       client.get("/admin/lecturers").then((res) => setLecturers(res.data));
       flash("Lecturer removed");
+    } catch (err) { flash(err.response?.data?.detail || "Failed", true); }
+  }
+  async function handleToggleLecturer(l) {
+    try {
+      await client.patch(`/admin/lecturers/${l.id}/active`, { is_active: !l.is_active });
+      client.get("/admin/lecturers").then((res) => setLecturers(res.data));
+      flash(l.is_active ? "Lecturer suspended" : "Lecturer reactivated");
+    } catch (err) { flash(err.response?.data?.detail || "Failed", true); }
+  }
+  async function handleResetLecturer(l) {
+    const pw = window.prompt(`Type a temporary password for ${l.full_name} (6 or more characters). They must change it at next login.`);
+    if (!pw) return;
+    try {
+      await client.post(`/admin/lecturers/${l.id}/reset-password`, { password: pw });
+      client.get("/admin/lecturers").then((res) => setLecturers(res.data));
+      flash("Temporary password set");
     } catch (err) { flash(err.response?.data?.detail || "Failed", true); }
   }
   async function handleAssignCourse(e) {
@@ -476,8 +493,9 @@ export default function AdminDashboard() {
       <div className="container pull-up">
         {message && <div className="card" style={{ background: "#dcfce7" }}>{message}</div>}
         {error && <div className="card error">{error}</div>}
-        <Tabs active={section} onChange={setSection} tabs={[["manage", "Manage"], ["community", "Community"]]} />
+        <Tabs active={section} onChange={setSection} tabs={[["manage", "Manage"], ["community", "Community"], ["pride", "FUTIA, our pride"]]} />
         {section === "community" && <AdminCommunity />}
+        {section === "pride" && <AdminGallery />}
         {section === "manage" && (<>
 
         {analytics && (
@@ -500,10 +518,10 @@ export default function AdminDashboard() {
         )}
 
         <Tiles items={[
-          { label: "Lecturers", sub: "Create and assign", icon: "👩‍🏫", img: "/img/s2.jpg", onClick: () => jump("lecturers") },
-          { label: "Password reset", sub: "Help a student", icon: "🔑", img: "/img/s4.jpg", tone: "orange", onClick: () => jump("reset") },
-          { label: "Academic setup", sub: "Faculties to materials", icon: "🏛", img: "/img/s3.jpg", onClick: () => jump("hierarchy") },
-          { label: "Community", sub: "News, forum, inbox", icon: "💬", tone: "plain", onClick: () => { setSection("community"); window.scrollTo({ top: 0, behavior: "smooth" }); } },
+          { label: "Lecturers", sub: "Create and assign courses, upload materials and enter results", pic: "/img/tile-lecturers.jpg", onClick: () => jump("lecturers") },
+          { label: "Password reset", sub: "Help a student recover their account", pic: "/img/tile-password.jpg", onClick: () => jump("reset") },
+          { label: "Academic setup", sub: "Faculties to materials", pic: "/img/tile-academic.jpg", onClick: () => jump("hierarchy") },
+          { label: "Community", sub: "News, forum, inbox", pic: "/img/tile-community.jpg", onClick: () => { setSection("community"); window.scrollTo({ top: 0, behavior: "smooth" }); } },
         ]} />
 
         <div className="masonry">
@@ -516,14 +534,20 @@ export default function AdminDashboard() {
             <button type="submit">Create Lecturer Account</button>
           </form>
           {lecturers.map((l) => (
-            <div key={l.id} className="material-row">
+            <div key={l.id} className="lecturer-row">
               <span
                 onClick={() => setSelectedLecturerId(String(l.id))}
                 style={{ cursor: "pointer", fontWeight: String(l.id) === String(selectedLecturerId) ? 700 : 400 }}
               >
                 {String(l.id) === String(selectedLecturerId) ? "▶ " : ""}{l.full_name} ({l.username})
+                {!l.is_active && <span className="badge">Suspended</span>}
+                {l.is_active && l.must_change_password && <span className="badge warn">Temp password</span>}
               </span>
-              <button className="danger" style={{ width: "auto" }} onClick={() => handleDeleteLecturer(l.id)}>Remove</button>
+              <span className="row-actions">
+                <button className="small secondary-dark" onClick={() => handleToggleLecturer(l)}>{l.is_active ? "Suspend" : "Reactivate"}</button>
+                <button className="small secondary-dark" onClick={() => handleResetLecturer(l)}>Reset password</button>
+                <button className="small danger" onClick={() => handleDeleteLecturer(l.id)}>Remove</button>
+              </span>
             </div>
           ))}
           {lecturers.length === 0 && <p>No lecturers yet — create one above.</p>}

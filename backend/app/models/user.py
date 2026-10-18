@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum, Boolean, text
 from sqlalchemy.orm import relationship
 import enum
 from app.core.database import Base
@@ -44,5 +44,7 @@ class Lecturer(Base):
     full_name = Column(String, nullable=False)
     hashed_password = Column(String, nullable=False)
     role = Column(Enum(UserRole), default=UserRole.lecturer, nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True, server_default=text("true"))
+    must_change_password = Column(Boolean, nullable=False, default=False, server_default=text("false"))
 
     assigned_courses = relationship("LecturerCourse", back_populates="lecturer", cascade="all, delete-orphan")
