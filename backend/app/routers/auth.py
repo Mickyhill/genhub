@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import hash_password, verify_password, create_access_token
+from app.core.security import hash_password, verify_password, create_access_token, decode_access_token
 from app.core.reg_number import parse_reg_number
 from app.models import Student, Admin, Lecturer, Faculty, Department, RegNumberRange
 from app.schemas.user import StudentRegister, StudentOut, AdminCreate, AdminOut, LoginRequest, Token
@@ -57,10 +57,18 @@ def register_student(data: StudentRegister, db: Session = Depends(get_db)):
 
 
 @router.post("/register/admin", response_model=AdminOut)
-def register_admin(data: AdminCreate, db: Session = Depends(get_db)):
-    # NOTE: In production, lock this endpoint down (e.g. require an existing
-    # admin token, or a one-time setup secret) so random users can't self-
-    # register as admin. Left open here to keep local setup simple.
+def register_admin(
+    data: AdminCreate,
+    db: Session = Depends(get_db),
+    authorization: str = Header(default=None),
+):
+    # The very first admin can be created freely (so you can set up the
+    # system). After that, only a logged-in admin can create more admins.
+    if db.query(Admin).count() > 0:
+        token = (authorization or "").removeprefix("Bearer ").strip()
+        payload = decode_access_token(token) if token else None
+        if not payload or payload.get("role") != "admin":
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Only an existing admin can create another admin")
     if db.query(Admin).filter(Admin.username == data.username).first():
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Username already taken")
 

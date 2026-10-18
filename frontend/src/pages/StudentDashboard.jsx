@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import client, { clearSession } from "../api/client";
+import Tabs from "./Tabs";
+import StudentCommunity from "./StudentCommunity";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -13,6 +15,7 @@ export default function StudentDashboard() {
   const [courses, setCourses] = useState([]);
   const [timetable, setTimetable] = useState([]);
   const [results, setResults] = useState([]);
+  const [section, setSection] = useState("academics");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -69,6 +72,9 @@ export default function StudentDashboard() {
       </div>
       <div className="container">
         {profile && <h2>Welcome, {profile.full_name}</h2>}
+        <Tabs active={section} onChange={setSection} tabs={[["academics", "Academics"], ["community", "Community"]]} />
+        {section === "community" && <StudentCommunity />}
+        {section === "academics" && (<>
 
         <div className="card">
           <h3>Choose what to view</h3>
@@ -135,6 +141,7 @@ export default function StudentDashboard() {
             </div>
           </>
         )}
+        </>)}
       </div>
     </div>
   );

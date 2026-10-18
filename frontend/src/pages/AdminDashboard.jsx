@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Tabs from "./Tabs";
+import AdminCommunity from "./AdminCommunity";
 import client, { clearSession } from "../api/client";
 
 // Row with just a name (used for Level, Semester).
@@ -83,6 +85,7 @@ function EditableRowWithCode({ item, onSave, onDelete, isSelected, onSelect }) {
 }
 
 export default function AdminDashboard() {
+  const [section, setSection] = useState("manage");
   const navigate = useNavigate();
 
   const [faculties, setFaculties] = useState([]);
@@ -460,6 +463,9 @@ export default function AdminDashboard() {
       <div className="container">
         {message && <div className="card" style={{ background: "#dcfce7" }}>{message}</div>}
         {error && <div className="card error">{error}</div>}
+        <Tabs active={section} onChange={setSection} tabs={[["manage", "Manage"], ["community", "Community"]]} />
+        {section === "community" && <AdminCommunity />}
+        {section === "manage" && (<>
 
         {analytics && (
           <div className="card">
@@ -711,6 +717,7 @@ export default function AdminDashboard() {
             </div>
           </>
         )}
+        </>)}
       </div>
     </div>
   );
