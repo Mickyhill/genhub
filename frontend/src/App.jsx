@@ -9,6 +9,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import LecturerDashboard from "./pages/LecturerDashboard";
 import ChangePassword from "./pages/ChangePassword";
 import LecturerSignup from "./pages/LecturerSignup";
+import InstallCheck from "./pages/InstallCheck";
 
 function ProtectedRoute({ role, children }) {
   const actualRole = getRole();
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/lecturer-signup" element={<LecturerSignup />} />
+        <Route path="/install-check" element={<InstallCheck />} />
 
         <Route
           path="/student"
