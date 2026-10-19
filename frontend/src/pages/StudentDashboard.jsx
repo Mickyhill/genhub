@@ -12,6 +12,7 @@ import RepTools from "./RepTools";
 import NextClass from "./NextClass";
 import SearchBox from "./SearchBox";
 import InstallPrompt from "./InstallPrompt";
+import HelpBot from "./HelpBot";
 import { Picker, SemesterStats, CourseCards, WeekTimetable, ResultCards } from "./AcademicViews";
 
 const SEL_KEY = "genhub_sel";
@@ -181,6 +182,15 @@ export default function StudentDashboard() {
         </aside>
         </div>
       </div>
+      <HelpBot
+        isRep={Boolean(profile?.is_rep)}
+        go={(where) => {
+          if (where === "community") { setSection("community"); window.scrollTo({ top: 0, behavior: "smooth" }); }
+          else if (where === "pride") { setSection("pride"); window.scrollTo({ top: 0, behavior: "smooth" }); }
+          else if (where === "rep") { setSection("rep"); window.scrollTo({ top: 0, behavior: "smooth" }); }
+          else go(where);
+        }}
+      />
       <Footer />
     </div>
   );
