@@ -10,10 +10,10 @@ function isStandalone() {
   }
 }
 
-function recentlyHidden() {
+// "Not now" hides the bar for this visit only. It comes back the next time GenHub opens.
+function hiddenThisVisit() {
   try {
-    const t = Number(localStorage.getItem(HIDE_KEY) || 0);
-    return Date.now() - t < 7 * 24 * 3600 * 1000;
+    return sessionStorage.getItem(HIDE_KEY) === "1";
   } catch {
     return false;
   }
@@ -22,7 +22,7 @@ function recentlyHidden() {
 // Offers "Add to home screen". Android shows a real install button, iPhone gets the two steps.
 export default function InstallPrompt() {
   const [evt, setEvt] = useState(() => (typeof window !== "undefined" ? window.__installEvt || null : null));
-  const [hidden, setHidden] = useState(() => isStandalone() || recentlyHidden());
+  const [hidden, setHidden] = useState(() => isStandalone() || hiddenThisVisit());
   const [how, setHow] = useState(false);
   const ios = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
 
@@ -41,17 +41,19 @@ export default function InstallPrompt() {
   if (hidden) return null;
 
   function later() {
-    try { localStorage.setItem(HIDE_KEY, String(Date.now())); } catch {}
+    try { sessionStorage.setItem(HIDE_KEY, "1"); } catch {}
     setHidden(true);
   }
 
   async function install() {
     if (!evt) return;
     evt.prompt();
-    try { await evt.userChoice; } catch {}
+    let outcome = "";
+    try { outcome = (await evt.userChoice).outcome; } catch {}
     window.__installEvt = null;
     setEvt(null);
-    setHidden(true);
+    if (outcome === "accepted") setHidden(true);
+    else setHow(true);
   }
 
   return (
