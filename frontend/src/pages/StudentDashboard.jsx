@@ -31,6 +31,7 @@ export default function StudentDashboard() {
   const [timetable, setTimetable] = useState([]);
   const [results, setResults] = useState([]);
   const [section, setSection] = useState("academics");
+  const [calMsg, setCalMsg] = useState("");
   const navigate = useNavigate();
   // The level and semester picked last time, so the next-lecture card is ready on open.
   const saved = useRef(readSel());
@@ -99,14 +100,22 @@ export default function StudentDashboard() {
   }
 
   async function handleDownloadCalendar() {
-    const res = await client.get(`/student/timetable.ics?semester_id=${semesterId}`, { responseType: "blob" });
-    const url = window.URL.createObjectURL(new Blob([res.data]));
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "timetable.ics");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    setCalMsg("");
+    try {
+      const res = await client.get(`/student/timetable.ics?semester_id=${semesterId}`, { responseType: "blob" });
+      const blob = new Blob([res.data], { type: "text/calendar" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "timetable.ics");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+      setCalMsg("Downloaded. Now open the file: tap the Downloaded notice, or open Files > Downloads and tap timetable.ics. Choose Calendar, then Import or Add.");
+    } catch (e) {
+      setCalMsg("The file could not be downloaded. Check your internet and try again.");
+    }
   }
 
   const sortedTimetable = [...timetable].sort(
@@ -161,7 +170,7 @@ export default function StudentDashboard() {
           <>
             <SemesterStats courses={courses} timetable={timetable} results={results} />
             <CourseCards courses={courses} />
-            <WeekTimetable entries={sortedTimetable} onDownload={handleDownloadCalendar} />
+            <WeekTimetable entries={sortedTimetable} onDownload={handleDownloadCalendar} calMsg={calMsg} />
             <ResultCards results={results} />
           </>
         )}

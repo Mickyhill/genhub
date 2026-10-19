@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 from sqlalchemy import or_
@@ -41,6 +41,28 @@ def _next_occurrence(day_name: str) -> date:
     today = date.today()
     days_ahead = (target - today.weekday()) % 7
     return today + timedelta(days=days_ahead)
+
+
+def _ics_text(value: str) -> str:
+    """Escapes text the way calendar files require, so a comma in a venue never breaks the import."""
+    return (str(value or "").replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
+            .replace("\r", "").replace("\n", "\\n"))
+
+
+def _ics_fold(line: str) -> str:
+    """Calendar lines may not pass 75 bytes. Longer ones continue on the next line after a space."""
+    raw = line.encode("utf-8")
+    if len(raw) <= 75:
+        return line
+    parts, cur = [], b""
+    for ch in line:
+        b = ch.encode("utf-8")
+        if len(cur) + len(b) > (75 if not parts else 74):
+            parts.append(cur); cur = b
+        else:
+            cur += b
+    parts.append(cur)
+    return "\r\n ".join(p.decode("utf-8") for p in parts)
 
 
 def _like(q: str) -> str:
@@ -168,31 +190,43 @@ def download_timetable_ics(
     semester = _get_semester_in_department(db, semester_id, student.department_id)
     entries = db.query(TimetableEntry).filter(TimetableEntry.semester_id == semester.id).all()
 
-    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//GenHub//Timetable//EN"]
+    stamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    lines = [
+        "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//GenHub//Timetable//EN",
+        "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+        "X-WR-CALNAME:GenHub Timetable", "X-WR-TIMEZONE:Africa/Lagos",
+        # Nigeria stays on UTC+1 all year, so one rule is enough.
+        "BEGIN:VTIMEZONE", "TZID:Africa/Lagos",
+        "BEGIN:STANDARD", "DTSTART:19700101T000000", "TZOFFSETFROM:+0100", "TZOFFSETTO:+0100", "TZNAME:WAT", "END:STANDARD",
+        "END:VTIMEZONE",
+    ]
     for e in entries:
         start_date = _next_occurrence(e.day_of_week)
         dtstart = f"{start_date.strftime('%Y%m%d')}T{e.start_time.strftime('%H%M%S')}"
         dtend = f"{start_date.strftime('%Y%m%d')}T{e.end_time.strftime('%H%M%S')}"
         byday = _ICS_BYDAY.get(e.day_of_week.upper(), "MO")
-        summary = f"{e.course.code} Lecture"
-        location = e.venue or ""
         lines += [
             "BEGIN:VEVENT",
             f"UID:genhub-{e.id}@genhub",
-            f"DTSTART:{dtstart}",
-            f"DTEND:{dtend}",
+            f"DTSTAMP:{stamp}",
+            f"DTSTART;TZID=Africa/Lagos:{dtstart}",
+            f"DTEND;TZID=Africa/Lagos:{dtend}",
             f"RRULE:FREQ=WEEKLY;BYDAY={byday}",
-            f"SUMMARY:{summary}",
-            f"LOCATION:{location}",
+            f"SUMMARY:{_ics_text(e.course.code + ' Lecture')}",
+            f"DESCRIPTION:{_ics_text(e.course.title)}",
+        ]
+        if e.venue:
+            lines.append(f"LOCATION:{_ics_text(e.venue)}")
+        lines += [
             "BEGIN:VALARM",
             "TRIGGER:-PT15M",
             "ACTION:DISPLAY",
-            "DESCRIPTION:Reminder",
+            "DESCRIPTION:Lecture in 15 minutes",
             "END:VALARM",
             "END:VEVENT",
         ]
     lines.append("END:VCALENDAR")
-    ics_content = "\r\n".join(lines)
+    ics_content = "\r\n".join(_ics_fold(l) for l in lines) + "\r\n"
 
     return Response(
         content=ics_content,

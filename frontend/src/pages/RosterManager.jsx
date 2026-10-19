@@ -12,25 +12,26 @@ export default function RosterManager({ base, departmentId, deptName }) {
   const [err, setErr] = useState("");
   const [reg, setReg] = useState("");
   const [name, setName] = useState("");
-  const [fileName, setFileName] = useState("");
+  const [open, setOpen] = useState(""); // "", "list", "add", "help"
   const fileRef = useRef(null);
   const dq = departmentId ? { department_id: departmentId } : {};
+  const toggle = (k) => setOpen(open === k ? "" : k);
 
   function load(text = q) {
     client.get(base, { params: { ...dq, q: text, limit: 100 } })
       .then((r) => setData(r.data))
       .catch((e) => setErr(e.response?.data?.detail || "Could not load the list"));
   }
-  useEffect(() => { setResult(null); setErr(""); load(""); setQ(""); }, [base, departmentId]);
+  useEffect(() => { setResult(null); setErr(""); setOpen(""); load(""); setQ(""); }, [base, departmentId]);
   useEffect(() => {
     const t = setTimeout(() => load(q), 300);
     return () => clearTimeout(t);
   }, [q]);
 
+  // One tap: pick the file and it goes straight in.
   async function upload(e) {
-    e.preventDefault();
-    const file = fileRef.current?.files?.[0];
-    if (!file) return setErr("Choose a file first");
+    const file = e.target.files?.[0];
+    if (!file) return;
     setBusy(true); setErr(""); setResult(null);
     try {
       const fd = new FormData();
@@ -38,9 +39,9 @@ export default function RosterManager({ base, departmentId, deptName }) {
       fd.append("file", file);
       const r = await client.post(base + "/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
       setResult(r.data);
-      fileRef.current.value = ""; setFileName("");
       load();
     } catch (ex) { setErr(ex.response?.data?.detail || "Upload failed"); }
+    if (fileRef.current) fileRef.current.value = "";
     setBusy(false);
   }
 
@@ -54,14 +55,14 @@ export default function RosterManager({ base, departmentId, deptName }) {
   }
 
   async function remove(id) {
-    if (!window.confirm("Remove this student from the list? Their account stays, but a new student with this number cannot register.")) return;
+    if (!window.confirm("Remove this student from the list? Their account stays.")) return;
     await client.delete(`${base}/${id}`); load();
   }
 
   return (
     <div className="card step" id="roster">
       <StepHead icon="📋" title={deptName ? `Class list: ${deptName}` : "Class list"}
-        sub="Upload who belongs to your department. Students register with their number and their name fills in by itself." />
+        sub="Students on this list register straight away and their names fill in by themselves." />
       {err && <div className="error">{err}</div>}
 
       {data && (
@@ -72,42 +73,54 @@ export default function RosterManager({ base, departmentId, deptName }) {
         </div>
       )}
 
-      <form onSubmit={upload} className="roster-up">
-        <label className="file-pick">
-          <span>{fileName ? `📄 ${fileName}` : "📄 Choose Excel or CSV file"}</span>
-          <input ref={fileRef} type="file" accept=".xlsx,.xlsm,.csv,.txt" onChange={(e) => setFileName(e.target.files[0]?.name || "")} />
-        </label>
-        <button type="submit" disabled={busy}>{busy ? "Reading the file…" : "Upload class list"}</button>
-      </form>
-      <p className="step-note">Each row needs a registration number and a name, for example 24/SCIT/SEN/045 and Ada Obi. A header row is fine. Uploading again updates names and adds new students. It never deletes anyone.</p>
+      <label className={"upload-btn" + (busy ? " busy" : "")}>
+        <span>{busy ? "⏳ Adding the list…" : "⬆ Upload class list (Excel or CSV)"}</span>
+        <input ref={fileRef} type="file" accept=".xlsx,.xlsm,.csv,.txt" onChange={upload} disabled={busy} />
+      </label>
 
       {result && (
         <div className="notice">
-          Done. Added {result.added}, updated {result.updated}, skipped {result.skipped}.
+          Done. {result.added} added, {result.updated} updated, {result.skipped} skipped.
           {result.problems.length > 0 && (
             <ul className="roster-problems">{result.problems.map((p, i) => <li key={i}>{p}</li>)}</ul>
           )}
         </div>
       )}
 
-      <form onSubmit={addOne} className="roster-add">
-        <input placeholder="Reg number" value={reg} onChange={(e) => setReg(e.target.value)} autoCapitalize="characters" required />
-        <input placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} required />
-        <button type="submit" className="mini" style={{ width: "auto" }}>Add one student</button>
-      </form>
+      <div className="roster-links">
+        <button type="button" className={"link-btn" + (open === "list" ? " on" : "")} onClick={() => toggle("list")}>👥 View list ({data ? data.total : 0})</button>
+        <button type="button" className={"link-btn" + (open === "add" ? " on" : "")} onClick={() => toggle("add")}>➕ Add one student</button>
+        <button type="button" className={"link-btn" + (open === "help" ? " on" : "")} onClick={() => toggle("help")}>ℹ️ File format</button>
+      </div>
 
-      <input placeholder="Search by name or number" value={q} onChange={(e) => setQ(e.target.value)} />
-      {data && data.items.length === 0 && (
-        <Empty icon="📋">{q ? "No match." : "No list yet. Upload a file above. Until then, students register with the number ranges and type their own names."}</Empty>
+      {open === "help" && (
+        <p className="step-note">Each row needs a registration number and a name, for example 24/SCIT/SEN/045 and Ada Obi. A header row is fine. Uploading again updates names and adds new students. Nobody is deleted.</p>
       )}
-      {data && data.items.map((r) => (
-        <div key={r.id} className="material-row item">
-          <span className="item-main"><b className="code-pill">{r.reg_number.split("/").slice(-1)[0]}</b>
-            <span className="item-name">{r.full_name} <small className="muted">{r.reg_number}</small></span></span>
-          <button className="mini danger" style={{ width: "auto" }} onClick={() => remove(r.id)} aria-label="Remove">🗑</button>
+
+      {open === "add" && (
+        <form onSubmit={addOne} className="roster-add">
+          <input placeholder="Reg number" value={reg} onChange={(e) => setReg(e.target.value)} autoCapitalize="characters" required />
+          <input placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} required />
+          <button type="submit" className="mini" style={{ width: "auto" }}>Add</button>
+        </form>
+      )}
+
+      {open === "list" && (
+        <div className="roster-scroll">
+          <input placeholder="Search by name or number" value={q} onChange={(e) => setQ(e.target.value)} />
+          {data && data.items.length === 0 && (
+            <Empty icon="📋">{q ? "No match." : "No list yet. Tap the upload button above."}</Empty>
+          )}
+          {data && data.items.map((r) => (
+            <div key={r.id} className="material-row item">
+              <span className="item-main"><b className="code-pill">{r.reg_number.split("/").slice(-1)[0]}</b>
+                <span className="item-name">{r.full_name} <small className="muted">{r.reg_number}</small></span></span>
+              <button className="mini danger" style={{ width: "auto" }} onClick={() => remove(r.id)} aria-label="Remove">🗑</button>
+            </div>
+          ))}
+          {data && data.total > data.items.length && !q && <p className="step-note">Showing the first {data.items.length}. Search to find others.</p>}
         </div>
-      ))}
-      {data && data.total > data.items.length && !q && <p className="step-note">Showing the first {data.items.length}. Search to find others.</p>}
+      )}
     </div>
   );
 }

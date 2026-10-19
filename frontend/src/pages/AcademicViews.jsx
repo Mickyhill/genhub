@@ -114,7 +114,7 @@ export function CourseCards({ courses }) {
   );
 }
 
-export function WeekTimetable({ entries, onDownload }) {
+export function WeekTimetable({ entries, onDownload, calMsg }) {
   const todayName = DAYS[(new Date().getDay() + 6) % 7];
   const byDay = DAYS.map((d) => [d, entries.filter((e) => e.day_of_week === d)]).filter(([, list]) => list.length);
   return (
@@ -147,6 +147,7 @@ export function WeekTimetable({ entries, onDownload }) {
       {entries.length > 0 && (
         <>
           <button className="cal-btn" onClick={onDownload}>📅 Add to my phone's calendar</button>
+          {calMsg && <div className="notice" style={{ marginTop: 12 }}>{calMsg}</div>}
           <p className="step-note">Import the file once into Google or Apple Calendar. Your phone's own alarms then remind you before each lecture.</p>
         </>
       )}
