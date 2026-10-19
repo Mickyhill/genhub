@@ -23,6 +23,7 @@ function recentlyHidden() {
 export default function InstallPrompt() {
   const [evt, setEvt] = useState(null);
   const [hidden, setHidden] = useState(() => isStandalone() || recentlyHidden());
+  const [how, setHow] = useState(false);
   const ios = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
 
   useEffect(() => {
@@ -36,7 +37,7 @@ export default function InstallPrompt() {
     };
   }, []);
 
-  if (hidden || (!evt && !ios)) return null;
+  if (hidden) return null;
 
   function later() {
     try { localStorage.setItem(HIDE_KEY, String(Date.now())); } catch {}
@@ -57,10 +58,20 @@ export default function InstallPrompt() {
       <div className="install-text">
         <strong>Put GenHub on your phone</strong>
         <span>
-          {evt ? "One tap adds it to your home screen. It opens full screen like an app." : "Tap Share, then Add to Home Screen."}
+          {evt
+            ? "One tap adds it to your home screen. It opens full screen like an app."
+            : how
+              ? ios
+                ? "Tap the Share button, then Add to Home Screen."
+                : "Tap the three dots at the top right of Chrome. Scroll the menu, then tap Install app or Add to Home screen."
+              : "Opens full screen like an app, with the FUTIA crest on your home screen."}
         </span>
       </div>
-      {evt && <button className="install-go" onClick={install}>Install</button>}
+      {evt ? (
+        <button className="install-go" onClick={install}>Install</button>
+      ) : (
+        !how && <button className="install-go" onClick={() => setHow(true)}>Install</button>
+      )}
       <button className="install-x" onClick={later} aria-label="Not now">×</button>
     </div>
   );
