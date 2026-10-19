@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import PasswordInput from "./PasswordInput";
 import client, { clearSession } from "../api/client";
 import Footer from "./Footer";
 
@@ -45,9 +46,9 @@ export default function ChangePassword() {
         <form className="card auth-card" onSubmit={submit}>
           <h2>New password</h2>
           {error && <div className="error">{error}</div>}
-          <input type="password" placeholder="Temporary password from the admin" value={current} onChange={(e) => setCurrent(e.target.value)} required />
-          <input type="password" placeholder="New password (8 or more characters)" value={next} onChange={(e) => setNext(e.target.value)} required />
-          <input type="password" placeholder="Repeat the new password" value={again} onChange={(e) => setAgain(e.target.value)} required />
+          <PasswordInput placeholder="Temporary password from the admin" value={current} onChange={(e) => setCurrent(e.target.value)} required />
+          <PasswordInput placeholder="New password (8 or more characters)" value={next} onChange={(e) => setNext(e.target.value)} required />
+          <PasswordInput placeholder="Repeat the new password" value={again} onChange={(e) => setAgain(e.target.value)} required />
           <button type="submit" disabled={busy}>{busy ? "Saving…" : "Save password"}</button>
           <button type="button" className="small" style={{ background: "transparent", color: "var(--muted)" }} onClick={logout}>Log out</button>
         </form>

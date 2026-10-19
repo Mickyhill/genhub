@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import PasswordInput from "./PasswordInput";
 import client from "../api/client";
 import Tabs from "./Tabs";
 import InviteManager from "./InviteManager";
@@ -119,7 +120,7 @@ function StudentPasswords() {
       {found && (
         <form onSubmit={reset}>
           <div className="notice">Found: <strong>{found.full_name}</strong></div>
-          <input type="password" placeholder="New password (6 or more characters)" value={pw} onChange={(e) => setPw(e.target.value)} required />
+          <PasswordInput placeholder="New password (6 or more characters)" value={pw} onChange={(e) => setPw(e.target.value)} required />
           <button type="submit">Set new password</button>
         </form>
       )}

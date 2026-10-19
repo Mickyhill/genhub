@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import HeroSlides from "./HeroSlides";
 import Footer from "./Footer";
 import FeatureRow from "./FeatureRow";
+import PasswordInput from "./PasswordInput";
 import client from "../api/client";
 
 export default function Register() {
@@ -94,7 +95,7 @@ export default function Register() {
         {resolved && (
           <form onSubmit={handleSubmit}>
             <input placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-            <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <PasswordInput placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             <button type="submit">Register</button>
           </form>
         )}

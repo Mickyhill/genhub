@@ -7,7 +7,28 @@ import Footer from "./Footer";
 import AdminGallery from "./AdminGallery";
 import RepsAdmin from "./RepsAdmin";
 import HeroSlides from "./HeroSlides";
+import PasswordInput from "./PasswordInput";
 import client, { clearSession } from "../api/client";
+
+
+// Header for each numbered step card on the Manage page.
+function StepHead({ n, title, sub, icon }) {
+  return (
+    <div className="step-head">
+      <span className="step-n">{n || icon}</span>
+      <div>
+        <h3>{title}</h3>
+        {sub && <p className="step-sub">{sub}</p>}
+      </div>
+    </div>
+  );
+}
+
+function Empty({ icon, children }) {
+  return <div className="empty"><span className="empty-ic">{icon}</span><p>{children}</p></div>;
+}
+
+const MINI = { width: "auto" };
 
 // Row with just a name (used for Level, Semester).
 function EditableRow({ item, labelKey, onSave, onDelete, isSelected, onSelect }) {
@@ -32,16 +53,18 @@ function EditableRow({ item, labelKey, onSave, onDelete, isSelected, onSelect })
   }
 
   return (
-    <div className="material-row">
+    <div className={"material-row item" + (isSelected ? " on" : "")}>
       <span
+        className="item-main"
         onClick={() => onSelect && onSelect(item.id)}
-        style={{ cursor: onSelect ? "pointer" : "default", fontWeight: isSelected ? 700 : 400 }}
+        style={{ cursor: onSelect ? "pointer" : "default" }}
       >
-        {isSelected ? "▶ " : ""}{item[labelKey]}
+        <b className="pill">{item[labelKey]}</b>
+        {isSelected && <em className="sel-tag">Selected</em>}
       </span>
-      <div style={{ display: "flex", gap: 6 }}>
-        <button style={{ width: "auto" }} onClick={() => setEditing(true)}>Edit</button>
-        <button className="danger" style={{ width: "auto" }} onClick={() => onDelete(item.id)}>Delete</button>
+      <div className="item-actions">
+        <button className="mini" style={MINI} onClick={() => setEditing(true)}>✎ Edit</button>
+        <button className="mini danger" style={MINI} onClick={() => onDelete(item.id)}>🗑</button>
       </div>
     </div>
   );
@@ -74,16 +97,19 @@ function EditableRowWithCode({ item, onSave, onDelete, isSelected, onSelect }) {
   }
 
   return (
-    <div className="material-row">
+    <div className={"material-row item" + (isSelected ? " on" : "")}>
       <span
+        className="item-main"
         onClick={() => onSelect && onSelect(item.id)}
-        style={{ cursor: onSelect ? "pointer" : "default", fontWeight: isSelected ? 700 : 400 }}
+        style={{ cursor: onSelect ? "pointer" : "default" }}
       >
-        {isSelected ? "▶ " : ""}{item.name} <small style={{ color: "#666" }}>({item.code})</small>
+        <b className="code-pill">{item.code}</b>
+        <span className="item-name">{item.name}</span>
+        {isSelected && <em className="sel-tag">Selected</em>}
       </span>
-      <div style={{ display: "flex", gap: 6 }}>
-        <button style={{ width: "auto" }} onClick={() => setEditing(true)}>Edit</button>
-        <button className="danger" style={{ width: "auto" }} onClick={() => onDelete(item.id)}>Delete</button>
+      <div className="item-actions">
+        <button className="mini" style={MINI} onClick={() => setEditing(true)}>✎ Edit</button>
+        <button className="mini danger" style={MINI} onClick={() => onDelete(item.id)}>🗑</button>
       </div>
     </div>
   );
@@ -527,12 +553,12 @@ export default function AdminDashboard() {
         ]} />
 
         <div className="masonry">
-        <div className="card" id="lecturers">
-          <h3>Lecturers</h3>
+        <div className="card step" id="lecturers">
+          <StepHead icon="👩‍🏫" title="Lecturers" sub="Create accounts and give each lecturer their courses." />
           <form onSubmit={handleCreateLecturer}>
             <input placeholder="Username" value={newLecturerUsername} onChange={(e) => setNewLecturerUsername(e.target.value)} required />
             <input placeholder="Full name" value={newLecturerName} onChange={(e) => setNewLecturerName(e.target.value)} required />
-            <input type="password" placeholder="Password" value={newLecturerPassword} onChange={(e) => setNewLecturerPassword(e.target.value)} required />
+            <PasswordInput placeholder="Password" value={newLecturerPassword} onChange={(e) => setNewLecturerPassword(e.target.value)} required />
             <button type="submit">Create Lecturer Account</button>
           </form>
           {lecturers.map((l) => (
@@ -579,9 +605,9 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        <div className="card" id="reset">
-          <h3>Student Password Reset</h3>
-          <p style={{ fontSize: 13, color: "#666" }}>
+        <div className="card step" id="reset">
+          <StepHead icon="🔑" title="Student Password Reset" />
+          <p className="step-note" style={{ marginTop: 0, marginBottom: 12 }}>
             Look up a student by registration number, then set a new password for them directly.
           </p>
           <div style={{ display: "flex", gap: 8 }}>
@@ -592,15 +618,15 @@ export default function AdminDashboard() {
             <>
               <div className="card" style={{ background: "#eef2ff" }}>Found: <strong>{resetFoundName}</strong></div>
               <form onSubmit={handleResetPassword}>
-                <input type="password" placeholder="New password" value={resetNewPassword} onChange={(e) => setResetNewPassword(e.target.value)} required />
+                <PasswordInput placeholder="New password" value={resetNewPassword} onChange={(e) => setResetNewPassword(e.target.value)} required />
                 <button type="submit">Set New Password</button>
               </form>
             </>
           )}
         </div>
 
-        <div className="card" id="hierarchy">
-          <h3>1. Faculty / School</h3>
+        <div className="card step" id="hierarchy">
+          <StepHead n="1" title="Faculty / School" sub="The big group a department belongs to. Start here." />
           <form onSubmit={handleCreateFaculty}>
             <div style={{ display: "flex", gap: 8 }}>
               <input style={{ flex: 2 }} placeholder="Faculty name e.g. School of Computing & IT" value={newFacultyName} onChange={(e) => setNewFacultyName(e.target.value)} required />
@@ -616,13 +642,13 @@ export default function AdminDashboard() {
               onSave={handleSaveFaculty} onDelete={handleDeleteFaculty}
             />
           ))}
-          {faculties.length === 0 && <p>No faculties yet — add one above.</p>}
-          <p style={{ fontSize: 13, color: "#666" }}>Click a faculty name to select it and manage what's inside it below.</p>
+          {faculties.length === 0 && <Empty icon="🏛️">No faculties yet. Add the first one above.</Empty>}
+          <p className="step-note">Tap a faculty to select it. Its departments open below.</p>
         </div>
 
         {facultyId && (
-          <div className="card">
-            <h3>2. Department</h3>
+          <div className="card step">
+            <StepHead n="2" title="Department" sub="Departments inside the selected faculty." />
             <form onSubmit={handleCreateDepartment}>
               <div style={{ display: "flex", gap: 8 }}>
                 <input style={{ flex: 2 }} placeholder="Department name e.g. Software Engineering" value={newDepartmentName} onChange={(e) => setNewDepartmentName(e.target.value)} required />
@@ -638,14 +664,14 @@ export default function AdminDashboard() {
                 onSave={handleSaveDepartment} onDelete={handleDeleteDepartment}
               />
             ))}
-            {departments.length === 0 && <p>No departments yet — add one above.</p>}
+            {departments.length === 0 && <Empty icon="🎓">No departments yet. Add one above.</Empty>}
           </div>
         )}
 
         {departmentId && (
-          <div className="card">
-            <h3>Registration Number Ranges — {selectedDepartment?.name}</h3>
-            <p style={{ fontSize: 13, color: "#666" }}>
+          <div className="card step">
+            <StepHead icon="🔢" title={`Registration Number Ranges — ${selectedDepartment?.name || ""}`} />
+            <p className="step-note">
               Students register using a number like <strong>24/{selectedFaculty?.code}/{selectedDepartment?.code}/045</strong>.
               Only numbers inside a range below are allowed to register. Add more than one range if you need to open extra slots later.
             </p>
@@ -658,18 +684,18 @@ export default function AdminDashboard() {
               <button type="submit">Add Range</button>
             </form>
             {regRanges.map((r) => (
-              <div key={r.id} className="material-row">
-                <span>{r.start_number} – {r.end_number} {r.label ? `(${r.label})` : ""}</span>
-                <button className="danger" style={{ width: "auto" }} onClick={() => handleDeleteRange(r.id)}>Delete</button>
+              <div key={r.id} className="material-row item">
+                <span className="item-main"><b className="code-pill">{r.start_number} – {r.end_number}</b>{r.label && <span className="item-name">{r.label}</span>}</span>
+                <button className="mini danger" style={MINI} onClick={() => handleDeleteRange(r.id)}>🗑</button>
               </div>
             ))}
-            {regRanges.length === 0 && <p style={{ color: "#dc2626" }}>No range set — students cannot register into this department yet.</p>}
+            {regRanges.length === 0 && <Empty icon="⚠️">No range set. Students cannot register into this department yet.</Empty>}
           </div>
         )}
 
         {departmentId && (
-          <div className="card">
-            <h3>3. Level</h3>
+          <div className="card step">
+            <StepHead n="3" title="Level" sub="100, 200, 300 and so on." />
             <form onSubmit={handleCreateLevel}>
               <input placeholder="e.g. 100" value={newLevel} onChange={(e) => setNewLevel(e.target.value)} required />
               <button type="submit">Add Level</button>
@@ -682,13 +708,13 @@ export default function AdminDashboard() {
                 onSave={handleSaveLevel} onDelete={handleDeleteLevel}
               />
             ))}
-            {levels.length === 0 && <p>No levels yet — add one above.</p>}
+            {levels.length === 0 && <Empty icon="📶">No levels yet. Add one above.</Empty>}
           </div>
         )}
 
         {levelId && (
-          <div className="card">
-            <h3>4. Semester</h3>
+          <div className="card step">
+            <StepHead n="4" title="Semester" sub="First or Second, inside the selected level." />
             <form onSubmit={handleCreateSemester}>
               <input placeholder="e.g. First" value={newSemester} onChange={(e) => setNewSemester(e.target.value)} required />
               <button type="submit">Add Semester</button>
@@ -701,30 +727,30 @@ export default function AdminDashboard() {
                 onSave={handleSaveSemester} onDelete={handleDeleteSemester}
               />
             ))}
-            {semesters.length === 0 && <p>No semesters yet — add one above.</p>}
+            {semesters.length === 0 && <Empty icon="🗓️">No semesters yet. Add one above.</Empty>}
           </div>
         )}
 
         {semesterId && (
           <>
-            <div className="card">
-              <h3>5. Courses</h3>
+            <div className="card step">
+              <StepHead n="5" title="Courses" sub="Code and title. Add the unit at the end, like: Intro to Programming, 3 Unit" />
               <form onSubmit={handleCreateCourse}>
                 <input placeholder="Course code e.g. MTH 101" value={newCourseCode} onChange={(e) => setNewCourseCode(e.target.value)} required />
                 <input placeholder="Course title" value={newCourseTitle} onChange={(e) => setNewCourseTitle(e.target.value)} required />
                 <button type="submit">Add Course</button>
               </form>
               {courses.map((c) => (
-                <div key={c.id} className="material-row">
-                  <span>{c.code} — {c.title}</span>
-                  <button className="danger" style={{ width: "auto" }} onClick={() => handleDeleteCourse(c.id)}>Delete</button>
+                <div key={c.id} className="material-row item">
+                  <span className="item-main"><b className="code-pill">{c.code}</b><span className="item-name">{c.title}</span></span>
+                  <button className="mini danger" style={MINI} onClick={() => handleDeleteCourse(c.id)}>🗑</button>
                 </div>
               ))}
-              {courses.length === 0 && <p>No courses yet — add one above.</p>}
+              {courses.length === 0 && <Empty icon="📚">No courses yet. Add one above.</Empty>}
             </div>
 
-            <div className="card">
-              <h3>6. Timetable</h3>
+            <div className="card step">
+              <StepHead n="6" title="Timetable" sub="When and where each course holds." />
               <form onSubmit={handleCreateTimetable}>
                 <select value={ttCourseId} onChange={(e) => setTtCourseId(e.target.value)} required>
                   <option value="">Select course</option>
@@ -741,16 +767,16 @@ export default function AdminDashboard() {
                 <button type="submit">Add Timetable Entry</button>
               </form>
               {timetable.map((t) => (
-                <div key={t.id} className="tt-row">
-                  <span>{t.day_of_week} {t.start_time}–{t.end_time} — {t.course_code} @ {t.venue || "—"}</span>
-                  <button className="danger" style={{ width: "auto" }} onClick={() => handleDeleteTimetable(t.id)}>Remove</button>
+                <div key={t.id} className="material-row item">
+                  <span className="item-main"><b className="day-pill">{t.day_of_week.slice(0, 3)}</b><span className="item-name"><strong>{t.course_code}</strong> · {t.start_time}–{t.end_time} · {t.venue || "No venue"}</span></span>
+                  <button className="mini danger" style={MINI} onClick={() => handleDeleteTimetable(t.id)}>🗑</button>
                 </div>
               ))}
-              {timetable.length === 0 && <p>No timetable entries yet.</p>}
+              {timetable.length === 0 && <Empty icon="⏰">No timetable entries yet.</Empty>}
             </div>
 
-            <div className="card">
-              <h3>7. Course Materials</h3>
+            <div className="card step">
+              <StepHead n="7" title="Course Materials" sub="Upload slides, notes and past questions. Students download them." />
               <form onSubmit={handleUploadMaterial}>
                 <select value={matCourseId} onChange={(e) => setMatCourseId(e.target.value)} required>
                   <option value="">Select course</option>

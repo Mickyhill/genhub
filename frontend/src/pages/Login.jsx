@@ -4,6 +4,7 @@ import HeroSlides from "./HeroSlides";
 import Footer from "./Footer";
 import FeatureRow from "./FeatureRow";
 import InstallPrompt from "./InstallPrompt";
+import PasswordInput from "./PasswordInput";
 import client, { saveSession } from "../api/client";
 
 export default function Login() {
@@ -49,8 +50,7 @@ export default function Login() {
             autoCapitalize="characters"
             required
           />
-          <input
-            type="password"
+          <PasswordInput
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import HeroSlides from "./HeroSlides";
 import client, { clearSession } from "../api/client";
 import Tabs from "./Tabs";
@@ -12,6 +12,7 @@ import RepTools from "./RepTools";
 import NextClass from "./NextClass";
 import SearchBox from "./SearchBox";
 import InstallPrompt from "./InstallPrompt";
+import { Picker, SemesterStats, CourseCards, WeekTimetable, ResultCards } from "./AcademicViews";
 
 const SEL_KEY = "genhub_sel";
 function readSel() {
@@ -142,21 +143,10 @@ export default function StudentDashboard() {
         {section === "rep" && profile?.is_rep && <RepTools />}
         {section === "academics" && (<>
 
-        <div className="card" id="choose">
-          <h3>Choose what to view</h3>
-          <p style={{ fontSize: 13, color: "#666" }}>
-            Pick a level and semester to see its courses, timetable, and materials.
-            You can switch this anytime — nothing here is permanent.
-          </p>
-          <select value={levelId} onChange={(e) => setLevelId(e.target.value)}>
-            <option value="">Select Level</option>
-            {levels.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
-          </select>
-          <select value={semesterId} onChange={(e) => setSemesterId(e.target.value)} disabled={!levelId}>
-            <option value="">Select Semester</option>
-            {semesters.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-        </div>
+        <Picker
+          levels={levels} semesters={semesters} levelId={levelId} semesterId={semesterId}
+          onLevel={setLevelId} onSemester={setSemesterId}
+        />
 
         {!semesterId && (
           <div className="promo" style={{ backgroundImage: "url(/img/s4.jpg)", minHeight: 200 }}>
@@ -169,51 +159,10 @@ export default function StudentDashboard() {
 
         {semesterId && (
           <>
-            <div className="card" id="courses">
-              <h3>Courses</h3>
-              {courses.length === 0 && <p>No courses found for this level/semester yet.</p>}
-              {courses.map((c) => (
-                <div key={c.id} className="material-row">
-                  <span>{c.code} — {c.title}</span>
-                  <Link to={`/student/courses/${c.id}/materials`}>
-                    <button style={{ width: "auto" }}>Materials</button>
-                  </Link>
-                </div>
-              ))}
-            </div>
-
-            <div className="card" id="timetable">
-              <h3>Timetable</h3>
-              {sortedTimetable.length === 0 && <p>No timetable entries yet.</p>}
-              {sortedTimetable.map((t) => (
-                <div key={t.id} className="tt-row">
-                  <span><strong>{t.day_of_week}</strong> {t.start_time}–{t.end_time}</span>
-                  <span>{t.course_code}</span>
-                  <span>{t.venue || "—"}</span>
-                </div>
-              ))}
-              {sortedTimetable.length > 0 && (
-                <button style={{ width: "auto", marginTop: 12 }} onClick={handleDownloadCalendar}>
-                  📅 Add to my phone's calendar
-                </button>
-              )}
-              <p style={{ fontSize: 13, color: "#666", marginTop: 8 }}>
-                Downloads a file you import once into Google/Apple Calendar — your
-                phone's own alarms then remind you before each lecture.
-              </p>
-            </div>
-
-            <div className="card" id="results">
-              <h3>Results</h3>
-              {results.length === 0 && <p>No results published yet for this semester.</p>}
-              {results.map((r) => (
-                <div key={r.id} className="tt-row">
-                  <span>{r.course_code}</span>
-                  <span>CA: {r.ca_score ?? "—"} / Exam: {r.exam_score ?? "—"}</span>
-                  <span><strong>{r.total} ({r.grade})</strong></span>
-                </div>
-              ))}
-            </div>
+            <SemesterStats courses={courses} timetable={timetable} results={results} />
+            <CourseCards courses={courses} />
+            <WeekTimetable entries={sortedTimetable} onDownload={handleDownloadCalendar} />
+            <ResultCards results={results} />
           </>
         )}
         </>)}
