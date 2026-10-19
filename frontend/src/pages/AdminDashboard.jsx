@@ -9,6 +9,7 @@ import RepsAdmin from "./RepsAdmin";
 import HeroSlides from "./HeroSlides";
 import PasswordInput from "./PasswordInput";
 import RosterManager from "./RosterManager";
+import PendingApprovals from "./PendingApprovals";
 import { StepHead, Empty } from "./StepUi";
 import client, { clearSession } from "../api/client";
 
@@ -521,12 +522,6 @@ export default function AdminDashboard() {
               <div className="stat">📄<b>{analytics.total_materials}</b><span>Materials</span></div>
               <div className="stat">👩‍🏫<b>{analytics.total_lecturers}</b><span>Lecturers</span></div>
             </div>
-            {analytics.departments_missing_reg_ranges.length > 0 && (
-              <div className="card error">
-                ⚠️ These departments have no registration range set. Students cannot register into them yet:{" "}
-                {analytics.departments_missing_reg_ranges.join(", ")}
-              </div>
-            )}
           </>
         )}
 
@@ -538,6 +533,7 @@ export default function AdminDashboard() {
         ]} />
 
         <div className="masonry">
+        <PendingApprovals base="/admin/approvals" />
         <div className="card step" id="lecturers">
           <StepHead icon="👩‍🏫" title="Lecturers" sub="Create accounts and give each lecturer their courses." />
           <form onSubmit={handleCreateLecturer}>
@@ -650,31 +646,6 @@ export default function AdminDashboard() {
               />
             ))}
             {departments.length === 0 && <Empty icon="🎓">No departments yet. Add one above.</Empty>}
-          </div>
-        )}
-
-        {departmentId && (
-          <div className="card step">
-            <StepHead icon="🔢" title={`Registration Number Ranges — ${selectedDepartment?.name || ""}`} />
-            <p className="step-note">
-              Students register using a number like <strong>24/{selectedFaculty?.code}/{selectedDepartment?.code}/045</strong>.
-              Only numbers inside a range below are allowed to register. Add more than one range if you need to open extra slots later.
-            </p>
-            <form onSubmit={handleCreateRange}>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input type="number" style={{ flex: 1 }} placeholder="Start e.g. 1" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)} required />
-                <input type="number" style={{ flex: 1 }} placeholder="End e.g. 90" value={rangeEnd} onChange={(e) => setRangeEnd(e.target.value)} required />
-                <input style={{ flex: 2 }} placeholder="Label (optional) e.g. Regular intake" value={rangeLabel} onChange={(e) => setRangeLabel(e.target.value)} />
-              </div>
-              <button type="submit">Add Range</button>
-            </form>
-            {regRanges.map((r) => (
-              <div key={r.id} className="material-row item">
-                <span className="item-main"><b className="code-pill">{r.start_number} – {r.end_number}</b>{r.label && <span className="item-name">{r.label}</span>}</span>
-                <button className="mini danger" style={MINI} onClick={() => handleDeleteRange(r.id)}>🗑</button>
-              </div>
-            ))}
-            {regRanges.length === 0 && <Empty icon="⚠️">No range set. Students cannot register into this department yet.</Empty>}
           </div>
         )}
 

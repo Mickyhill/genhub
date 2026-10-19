@@ -8,7 +8,9 @@ from app.core.deps import get_current_admin, get_current_rep
 from app.core.reg_number import parse_reg_number
 from app.core.roster import clean_name, clean_reg, parse_roster, save_roster
 from app.models import Department, RosterEntry, Student
-from app.schemas.academic import RosterEntryCreate, RosterEntryOut, RosterListOut, RosterUploadOut
+from app.schemas.academic import (
+    RosterEntryCreate, RosterEntryOut, RosterListOut, RosterUploadOut, PendingOut, PendingListOut, ApproveIn,
+)
 
 admin_router = APIRouter(prefix="/admin/roster", tags=["roster"], dependencies=[Depends(get_current_admin)])
 rep_router = APIRouter(prefix="/rep/manage/roster", tags=["roster"])
@@ -113,3 +115,76 @@ def rep_delete(entry_id: int, db: Session = Depends(get_db), rep: Student = Depe
     if not row or row.department_id != rep.department_id:
         raise HTTPException(404, "Not found")
     db.delete(row); db.commit()
+
+
+# ── Approvals: students who registered but are not on the list ────────
+def _pending_list(db: Session, department_id=None) -> PendingListOut:
+    q = db.query(Student).filter(Student.status == "pending")
+    if department_id is not None:
+        q = q.filter(Student.department_id == department_id)
+    rows = q.order_by(Student.id).limit(300).all()
+    names = {d.id: d.name for d in db.query(Department).all()}
+    return PendingListOut(
+        count=q.count(),
+        items=[PendingOut(id=s.id, reg_number=s.reg_number, full_name=s.full_name, reject_count=s.reject_count or 0,
+                          department_id=s.department_id, department_name=names.get(s.department_id)) for s in rows],
+    )
+
+
+def _approve(db: Session, s: Student, name):
+    if name is not None and name.strip():
+        s.full_name = clean_name(name)[:120]
+    s.status = "active"
+    row = db.query(RosterEntry).filter(RosterEntry.reg_number == s.reg_number).first()
+    if row is None:
+        db.add(RosterEntry(department_id=s.department_id, reg_number=s.reg_number, full_name=s.full_name))
+    elif row.department_id == s.department_id:
+        row.full_name = s.full_name
+    db.commit()
+
+
+def _reject(db: Session, s: Student):
+    s.status = "rejected"
+    s.reject_count = (s.reject_count or 0) + 1
+    db.commit()
+
+
+def _waiting(db: Session, student_id: int, department_id=None) -> Student:
+    s = db.get(Student, student_id)
+    if not s or s.status != "pending" or (department_id is not None and s.department_id != department_id):
+        raise HTTPException(404, "Not found")
+    return s
+
+
+approvals_admin = APIRouter(prefix="/admin/approvals", tags=["approvals"], dependencies=[Depends(get_current_admin)])
+approvals_rep = APIRouter(prefix="/rep/manage/approvals", tags=["approvals"])
+
+
+@approvals_admin.get("", response_model=PendingListOut)
+def admin_pending(db: Session = Depends(get_db)):
+    return _pending_list(db)
+
+
+@approvals_admin.post("/{student_id}/approve", status_code=204)
+def admin_approve(student_id: int, data: ApproveIn, db: Session = Depends(get_db)):
+    _approve(db, _waiting(db, student_id), data.full_name)
+
+
+@approvals_admin.post("/{student_id}/reject", status_code=204)
+def admin_reject(student_id: int, db: Session = Depends(get_db)):
+    _reject(db, _waiting(db, student_id))
+
+
+@approvals_rep.get("", response_model=PendingListOut)
+def rep_pending(db: Session = Depends(get_db), rep: Student = Depends(get_current_rep)):
+    return _pending_list(db, rep.department_id)
+
+
+@approvals_rep.post("/{student_id}/approve", status_code=204)
+def rep_approve(student_id: int, data: ApproveIn, db: Session = Depends(get_db), rep: Student = Depends(get_current_rep)):
+    _approve(db, _waiting(db, student_id, rep.department_id), data.full_name)
+
+
+@approvals_rep.post("/{student_id}/reject", status_code=204)
+def rep_reject(student_id: int, db: Session = Depends(get_db), rep: Student = Depends(get_current_rep)):
+    _reject(db, _waiting(db, student_id, rep.department_id))

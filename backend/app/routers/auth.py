@@ -47,12 +47,14 @@ def _record_fail(key):
 
 
 
+MAX_PENDING_PER_DEPARTMENT = 100
+
+
 @router.post("/register/student", response_model=StudentOut)
 def register_student(data: StudentRegister, db: Session = Depends(get_db)):
+    """On the department's list: in at once, name from the list.
+    Not on the list: the account waits until a class rep or the admin approves it."""
     reg_number = data.reg_number.strip().upper()
-
-    if db.query(Student).filter(Student.reg_number == reg_number).first():
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "This registration number is already registered")
 
     try:
         _year, faculty_code, dept_code, number = parse_reg_number(reg_number)
@@ -71,37 +73,42 @@ def register_student(data: StudentRegister, db: Session = Depends(get_db)):
     if not department:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No department found with code '{dept_code}' in {faculty.name}")
 
-    has_roster, listed_name = roster_name(db, department.id, reg_number)
-    if has_roster:
-        if not listed_name:
-            raise HTTPException(
-                status.HTTP_403_FORBIDDEN,
-                "This registration number is not on your department's list. Ask your class rep or the admin to add you.",
-            )
-        full_name = listed_name
-    else:
-        ranges = db.query(RegNumberRange).filter(RegNumberRange.department_id == department.id).all()
-        if not ranges or not any(r.start_number <= number <= r.end_number for r in ranges):
-            raise HTTPException(
-                status.HTTP_403_FORBIDDEN,
-                "Your registration number is not within the range approved by your department. "
-                "Contact your admin if you believe this is a mistake.",
-            )
-        full_name = (data.full_name or "").strip()
-        if not full_name:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Enter your full name")
     if len(data.password) < 6:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Password needs at least 6 characters")
 
-    # Level and semester are NOT set here anymore — the student picks which
-    # level/semester to view freely from their dashboard after logging in.
-    student = Student(
-        reg_number=reg_number,
-        full_name=full_name,
-        hashed_password=hash_password(data.password),
-        department_id=department.id,
-    )
-    db.add(student)
+    existing = db.query(Student).filter(Student.reg_number == reg_number).first()
+    if existing and existing.status == "active":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "This registration number is already registered")
+    if existing and existing.status == "pending":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "You already asked to join. Wait for your class rep to approve you.")
+
+    on_list, listed_name = roster_name(db, department.id, reg_number)
+    if listed_name:
+        full_name, new_status = listed_name, "active"
+    else:
+        full_name = " ".join((data.full_name or "").split())
+        if not full_name:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Enter your full name")
+        if len(full_name) > 120:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "That name is too long")
+        new_status = "pending"
+        waiting = db.query(Student).filter(Student.department_id == department.id, Student.status == "pending").count()
+        if waiting >= MAX_PENDING_PER_DEPARTMENT:
+            raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS,
+                                "Too many students are waiting in this department. Tell your class rep to clear the requests.")
+
+    if existing:  # a rejected student asking again
+        existing.full_name = full_name
+        existing.hashed_password = hash_password(data.password)
+        existing.status = new_status
+        student = existing
+    else:
+        student = Student(
+            reg_number=reg_number, full_name=full_name,
+            hashed_password=hash_password(data.password),
+            department_id=department.id, status=new_status,
+        )
+        db.add(student)
     db.commit()
     db.refresh(student)
     return student
@@ -142,6 +149,10 @@ def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)):
 
     student = db.query(Student).filter(Student.reg_number == identifier.upper()).first()
     if student and verify_password(data.password, student.hashed_password):
+        if (student.status or "active") == "pending":
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Your class rep has not approved you yet. Ask them to open Class rep tools and approve your request.")
+        if student.status == "rejected":
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Your request was not approved. Register again, or speak to your class rep.")
         _fails.pop(key, None)
         token = create_access_token({"sub": str(student.id), "role": "student"})
         return Token(access_token=token, role="student")

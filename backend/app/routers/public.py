@@ -65,23 +65,10 @@ def resolve_reg_number(reg_number: str, db: Session = Depends(get_db)):
     if not department:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No department found with code '{dept_code}' in {faculty.name}")
 
-    has_roster, listed_name = roster_name(db, department.id, reg_number.strip().upper())
-    if has_roster:
-        if not listed_name:
-            raise HTTPException(
-                status.HTTP_403_FORBIDDEN,
-                "This registration number is not on your department's list. Ask your class rep or the admin to add you.",
-            )
-    else:
-        ranges = db.query(RegNumberRange).filter(RegNumberRange.department_id == department.id).all()
-        if not ranges or not any(r.start_number <= number <= r.end_number for r in ranges):
-            raise HTTPException(
-                status.HTTP_403_FORBIDDEN,
-                "This registration number is not within the range approved by the department admin.",
-            )
+    _has, listed_name = roster_name(db, department.id, reg_number.strip().upper())
 
     return ResolvedRegNumber(
         faculty_id=faculty.id, faculty_name=faculty.name,
         department_id=department.id, department_name=department.name,
-        name_from_list=has_roster,
+        name_from_list=bool(listed_name),
     )

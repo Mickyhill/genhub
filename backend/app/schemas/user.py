@@ -15,6 +15,7 @@ class StudentOut(BaseModel):
     full_name: str
     department_id: Optional[int] = None
     is_rep: bool = False
+    status: str = "active"
 
 
 class AdminCreate(BaseModel):

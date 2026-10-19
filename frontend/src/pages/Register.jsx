@@ -15,6 +15,7 @@ export default function Register() {
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [sent, setSent] = useState(false);
   const navigate = useNavigate();
 
   // Reset the "verified" state whenever the reg number text changes.
@@ -41,12 +42,13 @@ export default function Register() {
     e.preventDefault();
     setError("");
     try {
-      await client.post("/auth/register/student", {
+      const res = await client.post("/auth/register/student", {
         reg_number: regNumber,
         full_name: fullName,
         password,
       });
-      navigate("/login");
+      if (res.data.status === "pending") setSent(true);
+      else navigate("/login");
     } catch (err) {
       setError(err.response?.data?.detail || "Registration failed");
     }
@@ -92,12 +94,21 @@ export default function Register() {
           </div>
         )}
 
-        {resolved && (
+        {sent && (
+          <div className="notice">
+            Request sent. Your class rep must approve you before you log in. Tell them your reg number, then try logging in later.
+          </div>
+        )}
+
+        {resolved && !sent && (
           <form onSubmit={handleSubmit}>
             {resolved.name_from_list ? (
               <div className="notice">Your name comes from your department's list. Set a password to finish.</div>
             ) : (
-              <input placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+              <>
+                <div className="notice">You are not on your department's list yet. Type your full name. Your class rep will approve you.</div>
+                <input placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+              </>
             )}
             <PasswordInput placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             <button type="submit">Register</button>

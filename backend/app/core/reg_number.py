@@ -4,7 +4,7 @@ Example: 24/SCIT/SEN/045  -> year=24, faculty_code=SCIT, dept_code=SEN, number=4
 """
 import re
 
-REG_NUMBER_PATTERN = re.compile(r"^(\d{2})/([A-Z]+)/([A-Z]+)/(\d{1,5})$")
+REG_NUMBER_PATTERN = re.compile(r"^(\d{2}D?)/([A-Z]+)/([A-Z]+)/(\d{1,5})$")
 
 
 def parse_reg_number(reg_number: str):

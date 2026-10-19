@@ -24,6 +24,8 @@ def get_current_student(
     student = db.query(Student).filter(Student.id == payload.get("sub")).first()
     if not student:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Student not found")
+    if (student.status or "active") != "active":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Your account is waiting for approval from your class rep.")
     return student
 
 

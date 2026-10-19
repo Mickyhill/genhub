@@ -200,3 +200,22 @@ class RosterUploadOut(BaseModel):
     updated: int
     skipped: int
     problems: list[str]
+
+
+# ── Students waiting for approval ─────────────────────────────────────
+class PendingOut(BaseModel):
+    id: int
+    reg_number: str
+    full_name: str
+    reject_count: int = 0
+    department_id: Optional[int] = None
+    department_name: Optional[str] = None
+
+
+class PendingListOut(BaseModel):
+    count: int
+    items: list[PendingOut]
+
+
+class ApproveIn(BaseModel):
+    full_name: Optional[str] = None

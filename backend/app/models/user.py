@@ -24,6 +24,9 @@ class Student(Base):
     semester_id = Column(Integer, ForeignKey("semesters.id"), nullable=True)
 
     is_rep = Column(Boolean, nullable=False, default=False, server_default=text("false"))
+    # "active" can log in. "pending" waits for a class rep or admin. "rejected" was refused and may ask again.
+    status = Column(String, nullable=False, default="active", server_default=text("'active'"))
+    reject_count = Column(Integer, nullable=False, default=0, server_default=text("0"))
 
     department = relationship("Department", back_populates="students")
 

@@ -15,7 +15,11 @@ def _add_missing_columns():
     from sqlalchemy import inspect, text
     insp = inspect(engine)
     wanted = {
-        "students": [("is_rep", "BOOLEAN NOT NULL DEFAULT FALSE")],
+        "students": [
+            ("is_rep", "BOOLEAN NOT NULL DEFAULT FALSE"),
+            ("status", "VARCHAR NOT NULL DEFAULT 'active'"),
+            ("reject_count", "INTEGER NOT NULL DEFAULT 0"),
+        ],
         "announcements": [("department_id", "INTEGER"), ("author_name", "VARCHAR")],
         "lecturers": [
             ("is_active", "BOOLEAN NOT NULL DEFAULT TRUE"),
@@ -70,6 +74,8 @@ app.include_router(rep.router)
 app.include_router(rep_manage.router)
 app.include_router(roster.admin_router)
 app.include_router(roster.rep_router)
+app.include_router(roster.approvals_admin)
+app.include_router(roster.approvals_rep)
 
 
 @app.get("/")
