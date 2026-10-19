@@ -306,3 +306,6 @@ button.secondary-dark:hover { background: #D3E8DF; }
 @media (min-width: 700px) { .next-code { font-size: 40px; } .next-card { padding: 22px 24px 20px; } }
 @media (prefers-reduced-motion: reduce) { .next-card, .search-panel { animation: none; } }
 .search-bar input::-webkit-search-cancel-button { display: none; }
+
+/* Student tiles: same picture shape for all four */
+.tiles.fit .tile-pic img { aspect-ratio: 1.32 / 1; object-fit: cover; }

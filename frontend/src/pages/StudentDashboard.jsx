@@ -85,9 +85,9 @@ export default function StudentDashboard() {
     }, 60);
   }
   const tiles = [
-    { label: "Courses", sub: "Materials and notes for every course", pic: "/img/tile-courses.jpg", onClick: () => go("courses") },
-    { label: "Timetable", sub: "Alarms for lectures", pic: "/img/tile-timetable.jpg", onClick: () => go("timetable") },
-    { label: "Results", sub: "CA, exam and grade", pic: "/img/tile-results.jpg", onClick: () => go("results") },
+    { label: "Courses", sub: "Materials and notes for every course", pic: "/img/tile-s-courses.webp", onClick: () => go("courses") },
+    { label: "Timetable", sub: "Alarms for lectures", pic: "/img/tile-s-timetable.webp", onClick: () => go("timetable") },
+    { label: "Results", sub: "CA, exam and grade", pic: "/img/tile-s-results.webp", onClick: () => go("results") },
     { label: "Community", sub: "News, forum, inbox", pic: "/img/tile-community.jpg", onClick: () => setSection("community") },
   ];
 
@@ -133,7 +133,7 @@ export default function StudentDashboard() {
           onOpenTimetable={() => go("timetable")}
         />
         <SearchBox onOpenCommunity={() => { setSection("community"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
-        <Tiles items={tiles} />
+        <Tiles items={tiles} fit />
         <div className="layout">
         <div className="main">
         <Tabs active={section} onChange={setSection} tabs={[["academics", "Academics"], ["community", "Community"], ["pride", "FUTIA, our pride"], ...(profile?.is_rep ? [["rep", "Class rep tools"]] : [])]} />
