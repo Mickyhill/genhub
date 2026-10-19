@@ -33,6 +33,8 @@ export default function StudentDashboard() {
   const [results, setResults] = useState([]);
   const [section, setSection] = useState("academics");
   const [calMsg, setCalMsg] = useState("");
+  const [openSec, setOpenSec] = useState({ courses: false, timetable: false, results: false });
+  const flip = (k) => setOpenSec((o) => ({ ...o, [k]: !o[k] }));
   const navigate = useNavigate();
   // The level and semester picked last time, so the next-lecture card is ready on open.
   const saved = useRef(readSel());
@@ -82,6 +84,7 @@ export default function StudentDashboard() {
 
   function go(id) {
     setSection("academics");
+    if (id === "courses" || id === "timetable" || id === "results") setOpenSec((o) => ({ ...o, [id]: true }));
     setTimeout(() => {
       const el = document.getElementById(id) || document.getElementById("choose");
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -170,9 +173,9 @@ export default function StudentDashboard() {
         {semesterId && (
           <>
             <SemesterStats courses={courses} timetable={timetable} results={results} />
-            <CourseCards courses={courses} />
-            <WeekTimetable entries={sortedTimetable} onDownload={handleDownloadCalendar} calMsg={calMsg} />
-            <ResultCards results={results} />
+            <CourseCards courses={courses} open={openSec.courses} onToggle={() => flip("courses")} />
+            <WeekTimetable entries={sortedTimetable} onDownload={handleDownloadCalendar} calMsg={calMsg} open={openSec.timetable} onToggle={() => flip("timetable")} />
+            <ResultCards results={results} open={openSec.results} onToggle={() => flip("results")} />
           </>
         )}
         </>)}

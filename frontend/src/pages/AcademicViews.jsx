@@ -25,6 +25,18 @@ function t12(t) {
   return `${((hh + 11) % 12) + 1}:${m || "00"}${hh >= 12 ? "pm" : "am"}`;
 }
 
+// A section that opens when tapped. Closed by default so the page stays short.
+function SectHead({ icon, title, count, hint, open, onToggle }) {
+  return (
+    <button type="button" className={"sect-toggle" + (open ? " open" : "")} onClick={onToggle} aria-expanded={open}>
+      <span className="sect-ic">{icon}</span>
+      <span className="sect-title"><b>{title}</b><small>{hint}</small></span>
+      <em className="count">{count}</em>
+      <span className="chev" aria-hidden="true">▾</span>
+    </button>
+  );
+}
+
 export function Picker({ levels, semesters, levelId, semesterId, onLevel, onSemester }) {
   return (
     <div className="card pick" id="choose">
@@ -85,14 +97,14 @@ export function SemesterStats({ courses, timetable, results }) {
   );
 }
 
-export function CourseCards({ courses }) {
+export function CourseCards({ courses, open, onToggle }) {
   return (
     <div className="card sect" id="courses">
-      <div className="sect-head"><span className="sect-ic">📚</span><h3>Courses</h3><em className="count">{courses.length}</em></div>
-      {courses.length === 0 && (
+      <SectHead icon="📚" title="Courses" count={courses.length} hint="Tap to see your courses and files" open={open} onToggle={onToggle} />
+      {open && courses.length === 0 && (
         <div className="empty"><span className="empty-ic">📚</span><p>No courses found for this level and semester yet.</p></div>
       )}
-      <div className="course-grid">
+      {open && <div className="course-grid">
         {courses.map((c) => {
           const { name, unit } = splitTitle(c.title);
           const hue = hueFor(c.code);
@@ -109,21 +121,21 @@ export function CourseCards({ courses }) {
             </div>
           );
         })}
-      </div>
+      </div>}
     </div>
   );
 }
 
-export function WeekTimetable({ entries, onDownload, calMsg }) {
+export function WeekTimetable({ entries, onDownload, calMsg, open, onToggle }) {
   const todayName = DAYS[(new Date().getDay() + 6) % 7];
   const byDay = DAYS.map((d) => [d, entries.filter((e) => e.day_of_week === d)]).filter(([, list]) => list.length);
   return (
     <div className="card sect" id="timetable">
-      <div className="sect-head"><span className="sect-ic">🗓️</span><h3>Timetable</h3><em className="count">{entries.length}</em></div>
-      {entries.length === 0 && (
+      <SectHead icon="🗓️" title="Timetable" count={entries.length} hint="Tap to see your week" open={open} onToggle={onToggle} />
+      {open && entries.length === 0 && (
         <div className="empty"><span className="empty-ic">⏰</span><p>No timetable entries yet.</p></div>
       )}
-      <div className="week">
+      {open && <div className="week">
         {byDay.map(([day, list]) => (
           <div key={day} className={"day" + (day === todayName ? " today" : "")}>
             <div className="day-name">
@@ -143,8 +155,8 @@ export function WeekTimetable({ entries, onDownload, calMsg }) {
             </div>
           </div>
         ))}
-      </div>
-      {entries.length > 0 && (
+      </div>}
+      {open && entries.length > 0 && (
         <>
           <button className="cal-btn" onClick={onDownload}>📅 Add to my phone's calendar</button>
           {calMsg && <div className="notice" style={{ marginTop: 12 }}>{calMsg}</div>}
@@ -157,14 +169,14 @@ export function WeekTimetable({ entries, onDownload, calMsg }) {
 
 const GRADE_TONE = { A: "g-a", B: "g-b", C: "g-c", D: "g-d", F: "g-f" };
 
-export function ResultCards({ results }) {
+export function ResultCards({ results, open, onToggle }) {
   return (
     <div className="card sect" id="results">
-      <div className="sect-head"><span className="sect-ic">🏆</span><h3>Results</h3><em className="count">{results.length}</em></div>
-      {results.length === 0 && (
+      <SectHead icon="🏆" title="Results" count={results.length} hint="Tap to see your scores" open={open} onToggle={onToggle} />
+      {open && results.length === 0 && (
         <div className="empty"><span className="empty-ic">🏆</span><p>No results published yet for this semester.</p></div>
       )}
-      <div className="res-grid">
+      {open && <div className="res-grid">
         {results.map((r) => {
           const total = Number(r.total) || 0;
           return (
@@ -182,7 +194,7 @@ export function ResultCards({ results }) {
             </div>
           );
         })}
-      </div>
+      </div>}
     </div>
   );
 }
