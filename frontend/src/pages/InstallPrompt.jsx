@@ -21,18 +21,19 @@ function recentlyHidden() {
 
 // Offers "Add to home screen". Android shows a real install button, iPhone gets the two steps.
 export default function InstallPrompt() {
-  const [evt, setEvt] = useState(null);
+  const [evt, setEvt] = useState(() => (typeof window !== "undefined" ? window.__installEvt || null : null));
   const [hidden, setHidden] = useState(() => isStandalone() || recentlyHidden());
   const [how, setHow] = useState(false);
   const ios = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
 
   useEffect(() => {
-    const onPrompt = (e) => { e.preventDefault(); setEvt(e); };
+    const onReady = () => setEvt(window.__installEvt || null);
     const onInstalled = () => setHidden(true);
-    window.addEventListener("beforeinstallprompt", onPrompt);
+    onReady();
+    window.addEventListener("genhub-install-ready", onReady);
     window.addEventListener("appinstalled", onInstalled);
     return () => {
-      window.removeEventListener("beforeinstallprompt", onPrompt);
+      window.removeEventListener("genhub-install-ready", onReady);
       window.removeEventListener("appinstalled", onInstalled);
     };
   }, []);
@@ -48,6 +49,7 @@ export default function InstallPrompt() {
     if (!evt) return;
     evt.prompt();
     try { await evt.userChoice; } catch {}
+    window.__installEvt = null;
     setEvt(null);
     setHidden(true);
   }
