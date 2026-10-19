@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import hash_password, verify_password, create_access_token, decode_access_token
 from app.core.reg_number import parse_reg_number
+from app.core.roster import roster_name
 from datetime import datetime
 from app.models import Student, Admin, Lecturer, Faculty, Department, RegNumberRange, LecturerCourse, LecturerInvite
 from app.schemas.user import StudentRegister, StudentOut, AdminCreate, AdminOut, LoginRequest, Token, LecturerSignup
@@ -70,19 +71,33 @@ def register_student(data: StudentRegister, db: Session = Depends(get_db)):
     if not department:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No department found with code '{dept_code}' in {faculty.name}")
 
-    ranges = db.query(RegNumberRange).filter(RegNumberRange.department_id == department.id).all()
-    if not ranges or not any(r.start_number <= number <= r.end_number for r in ranges):
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN,
-            "Your registration number is not within the range approved by your department. "
-            "Contact your admin if you believe this is a mistake.",
-        )
+    has_roster, listed_name = roster_name(db, department.id, reg_number)
+    if has_roster:
+        if not listed_name:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "This registration number is not on your department's list. Ask your class rep or the admin to add you.",
+            )
+        full_name = listed_name
+    else:
+        ranges = db.query(RegNumberRange).filter(RegNumberRange.department_id == department.id).all()
+        if not ranges or not any(r.start_number <= number <= r.end_number for r in ranges):
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "Your registration number is not within the range approved by your department. "
+                "Contact your admin if you believe this is a mistake.",
+            )
+        full_name = (data.full_name or "").strip()
+        if not full_name:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Enter your full name")
+    if len(data.password) < 6:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Password needs at least 6 characters")
 
     # Level and semester are NOT set here anymore — the student picks which
     # level/semester to view freely from their dashboard after logging in.
     student = Student(
         reg_number=reg_number,
-        full_name=data.full_name,
+        full_name=full_name,
         hashed_password=hash_password(data.password),
         department_id=department.id,
     )

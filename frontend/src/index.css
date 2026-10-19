@@ -395,3 +395,20 @@ button.secondary-dark:hover { background: #D3E8DF; }
 .item-actions { display: flex; gap: 6px; flex: none; }
 button.mini { margin: 0; padding: 7px 11px; font-size: 13px; border-radius: 9px; }
 .step form + .material-row, .step form + .empty { margin-top: 4px; }
+
+/* ---------- Class list and rep manage ---------- */
+.sem-stats.three { grid-template-columns: repeat(3, 1fr); }
+.roster-up { display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch; }
+.roster-up button { width: auto; margin: 0 0 12px; }
+.file-pick { flex: 1 1 220px; display: flex; align-items: center; padding: 12px; margin-bottom: 12px; border: 2px dashed var(--line); border-radius: 12px; background: #FAFBFD; cursor: pointer; color: var(--ink-2); font-weight: 600; font-size: 14px; position: relative; overflow: hidden; }
+.file-pick input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; padding: 0; cursor: pointer; }
+.file-pick span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.roster-problems { margin: 8px 0 0; padding-left: 18px; font-size: 13px; }
+.roster-add { display: grid; grid-template-columns: 1fr 1.6fr auto; gap: 8px; align-items: start; margin-top: 4px; }
+.roster-add input, .roster-add button { margin-bottom: 12px; }
+.roster-add button { margin-top: 0; }
+.chip-add { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+.chip-add input { flex: 1 1 160px; width: auto; margin: 0; padding: 9px 12px; }
+.chip-add button { margin: 0; }
+@media (max-width: 560px) { .roster-add { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .step .material-row.item { flex-direction: row; align-items: center; gap: 10px; } }

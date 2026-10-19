@@ -4,7 +4,7 @@ from typing import Optional
 
 class StudentRegister(BaseModel):
     reg_number: str
-    full_name: str
+    full_name: str = ""
     password: str
 
 

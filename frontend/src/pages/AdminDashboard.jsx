@@ -8,25 +8,10 @@ import AdminGallery from "./AdminGallery";
 import RepsAdmin from "./RepsAdmin";
 import HeroSlides from "./HeroSlides";
 import PasswordInput from "./PasswordInput";
+import RosterManager from "./RosterManager";
+import { StepHead, Empty } from "./StepUi";
 import client, { clearSession } from "../api/client";
 
-
-// Header for each numbered step card on the Manage page.
-function StepHead({ n, title, sub, icon }) {
-  return (
-    <div className="step-head">
-      <span className="step-n">{n || icon}</span>
-      <div>
-        <h3>{title}</h3>
-        {sub && <p className="step-sub">{sub}</p>}
-      </div>
-    </div>
-  );
-}
-
-function Empty({ icon, children }) {
-  return <div className="empty"><span className="empty-ic">{icon}</span><p>{children}</p></div>;
-}
 
 const MINI = { width: "auto" };
 
@@ -692,6 +677,8 @@ export default function AdminDashboard() {
             {regRanges.length === 0 && <Empty icon="⚠️">No range set. Students cannot register into this department yet.</Empty>}
           </div>
         )}
+
+        {departmentId && <RosterManager base="/admin/roster" departmentId={departmentId} deptName={selectedDepartment?.name} />}
 
         {departmentId && (
           <div className="card step">

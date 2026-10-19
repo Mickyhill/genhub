@@ -94,7 +94,11 @@ export default function Register() {
 
         {resolved && (
           <form onSubmit={handleSubmit}>
-            <input placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+            {resolved.name_from_list ? (
+              <div className="notice">Your name comes from your department's list. Set a password to finish.</div>
+            ) : (
+              <input placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+            )}
             <PasswordInput placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             <button type="submit">Register</button>
           </form>

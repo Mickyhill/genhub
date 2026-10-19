@@ -128,6 +128,7 @@ class ResolvedRegNumber(BaseModel):
     faculty_name: str
     department_id: int
     department_name: str
+    name_from_list: bool = False
 
 
 # ── Lecturer-Course assignment ───────────────────────────────────────
@@ -173,3 +174,29 @@ class AnalyticsOverview(BaseModel):
     total_materials: int
     total_lecturers: int
     departments_missing_reg_ranges: list[str]
+
+
+# ── Department roster ─────────────────────────────────────────────────
+class RosterEntryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    reg_number: str
+    full_name: str
+
+
+class RosterEntryCreate(BaseModel):
+    reg_number: str
+    full_name: str
+
+
+class RosterListOut(BaseModel):
+    total: int
+    registered: int
+    items: list[RosterEntryOut]
+
+
+class RosterUploadOut(BaseModel):
+    added: int
+    updated: int
+    skipped: int
+    problems: list[str]

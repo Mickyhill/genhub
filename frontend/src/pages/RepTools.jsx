@@ -3,12 +3,14 @@ import PasswordInput from "./PasswordInput";
 import client from "../api/client";
 import Tabs from "./Tabs";
 import InviteManager from "./InviteManager";
+import RosterManager from "./RosterManager";
+import RepManage from "./RepManage";
 
 const fmt = (d) => new Date(d + "Z").toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
 
 // Everything a class rep may do, always inside their own department.
 export default function RepTools() {
-  const [tab, setTab] = useState("codes");
+  const [tab, setTab] = useState("manage");
   return (
     <>
       <div className="card rep-note">
@@ -17,8 +19,10 @@ export default function RepTools() {
       <Tabs
         active={tab}
         onChange={setTab}
-        tabs={[["codes", "Lecturer codes"], ["news", "Class notices"], ["forum", "Forum"], ["students", "Student passwords"]]}
+        tabs={[["manage", "Manage courses"], ["roster", "Class list"], ["codes", "Lecturer codes"], ["news", "Class notices"], ["forum", "Forum"], ["students", "Student passwords"]]}
       />
+      {tab === "manage" && <RepManage />}
+      {tab === "roster" && <RosterManager base="/rep/manage/roster" />}
       {tab === "codes" && <InviteManager base="/rep" />}
       {tab === "news" && <Notices />}
       {tab === "forum" && <ForumModeration />}

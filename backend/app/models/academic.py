@@ -36,6 +36,7 @@ class Department(Base):
     levels = relationship("Level", back_populates="department", cascade="all, delete-orphan")
     students = relationship("Student", back_populates="department")
     reg_ranges = relationship("RegNumberRange", back_populates="department", cascade="all, delete-orphan")
+    roster = relationship("RosterEntry", back_populates="department", cascade="all, delete-orphan")
 
     __table_args__ = (
         UniqueConstraint("name", "faculty_id", name="uq_department_name_per_faculty"),

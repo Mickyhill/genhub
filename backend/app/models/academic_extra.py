@@ -78,3 +78,15 @@ class Result(Base):
     course = relationship("Course")
 
     __table_args__ = (UniqueConstraint("student_id", "course_id", name="uq_result_per_student_course"),)
+
+
+class RosterEntry(Base):
+    """One student on a department's official list. Registration checks against it when a list exists."""
+    __tablename__ = "roster_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=False, index=True)
+    reg_number = Column(String, nullable=False, unique=True, index=True)
+    full_name = Column(String, nullable=False)
+
+    department = relationship("Department", back_populates="roster")
