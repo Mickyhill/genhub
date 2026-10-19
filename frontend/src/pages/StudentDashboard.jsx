@@ -85,10 +85,10 @@ export default function StudentDashboard() {
     }, 60);
   }
   const tiles = [
-    { label: "Courses", sub: "Materials and notes", icon: "📚", img: "/img/s2.jpg", onClick: () => go("courses") },
-    { label: "Timetable", sub: "Alarms for lectures", icon: "🗓️", img: "/img/s4.jpg", tone: "orange", onClick: () => go("timetable") },
-    { label: "Results", sub: "CA, exam and grade", icon: "🎓", img: "/img/s3.jpg", onClick: () => go("results") },
-    { label: "Community", sub: "Forum and messages", icon: "💬", tone: "plain", onClick: () => setSection("community") },
+    { label: "Courses", sub: "Materials and notes for every course", pic: "/img/tile-courses.jpg", onClick: () => go("courses") },
+    { label: "Timetable", sub: "Alarms for lectures", pic: "/img/tile-timetable.jpg", onClick: () => go("timetable") },
+    { label: "Results", sub: "CA, exam and grade", pic: "/img/tile-results.jpg", onClick: () => go("results") },
+    { label: "Community", sub: "News, forum, inbox", pic: "/img/tile-community.jpg", onClick: () => setSection("community") },
   ];
 
   function handleLogout() {
